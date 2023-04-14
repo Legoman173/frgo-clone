@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang = "en">
+    <head>
+        <script src="https://cdn.rawgit.com/davidshimjs/qrcodejs/gh-pages/qrcode.min.js"></script>
+    </head>
+
+    <body>
+        <form action = javascript:MakeCode() id = "form">
+            <select id = "type" oninput="ChangeType()">
+                <option value = "link" selected>Link</option>
+                <option value = "vcard">VCard</option>
+            </select>
+            <div id = "options"></div>
+        </form>
+        <div id = "code"></div>
+        <script>
+
+           /* var qrcode = new QRCode("code", {
+            text: "BEGIN:VCARD\nVERSION:4.0\nFN:Roger Grave de Peralta\nN:Grave de Peralta;Roger\nEMAIL;TYPE=work:rgravedeperalta@garciastromberg.com\nTEL;TYPE=cell:(561) 324-7797\nTITLE:Vice President\nORG:Garcia Stromberg\nURL:http://www.garciastromberg.com\nPHOTO:\nEND:VCARD",
+            width: 256,
+            height: 256,
+            colorDark : "#000000",
+            colorLight : "#ffffff",
+            correctLevel : QRCode.CorrectLevel.H});*/
+
+            function ChangeType(){
+                var type = document.getElementById("type").value;
+                var form = document.getElementById("form");
+                var oldDiv = document.getElementById("options");
+                oldDiv.remove();
+                var newDiv = document.createElement("div");
+                newDiv.setAttribute("id","options");
+                form.appendChild(newDiv);
+                if (type == "link"){
+                    var cLevel = document.createElement("select");
+                    cLevel.id = "correctionLevel"
+                    var l = document.createElement("option");
+                    l.value = QRCode.CorrectLevel.L;
+                    var M = document.createElement("option");
+                    M.value = QRCode.CorrectLevel.M;
+                    var Q = document.createElement("option");
+                    Q.value = QRCode.CorrectLevel.Q;
+                    var H = document.createElement("option");
+                    H.value = QRCode.CorrectLevel.H;
+                    l.innerHTML = "Correction level L (7%) (smallest code, worst level of error)";
+                    M.innerHTML = "Correction level M (15%)";
+                    Q.innerHTML = "Correction level Q (25%)";
+                    H.innerHTML = "Correction level H (30%) (biggest code, best level of error)";
+                    cLevel.appendChild(H);
+                    cLevel.appendChild(Q);
+                    cLevel.appendChild(M);
+                    cLevel.appendChild(l);
+                    newDiv.appendChild(document.createElement("br"));
+                    newDiv.appendChild(cLevel);
+
+                    var url = document.createElement("input");
+                    url.setAttribute("type","url");
+                    url.setAttribute("id","url");
+                    var urlLabel = document.createElement("label");
+                    urlLabel.setAttribute("for","url");
+                    urlLabel.innerHTML = "URL:";  
+                    newDiv.appendChild(document.createElement("br"));
+                    newDiv.appendChild(document.createElement("br"));
+                    newDiv.appendChild(urlLabel);
+                    newDiv.appendChild(document.createElement("br"));
+                    newDiv.appendChild(url);
+
+                    var submit = document.createElement("input");
+                    submit.setAttribute("type","submit");
+                    newDiv.appendChild(document.createElement("br"));
+                    newDiv.appendChild(submit)
+                }
+                else if (type == "vcard"){
+                    var cLevel = document.createElement("select");
+                    cLevel.id = "correctionLevel"
+                    var l = document.createElement("option");
+                    l.value = QRCode.CorrectLevel.L;
+                    var M = document.createElement("option");
+                    M.value = QRCode.CorrectLevel.M;
+                    var Q = document.createElement("option");
+                    Q.value = QRCode.CorrectLevel.Q;
+                    var H = document.createElement("option");
+                    H.value = QRCode.CorrectLevel.H;
+                    l.innerHTML = "Correction level L (7%) (smallest code, worst level of error)";
+                    M.innerHTML = "Correction level M (15%)";
+                    Q.innerHTML = "Correction level Q (25%)";
+                    H.innerHTML = "Correction level H (30%) (biggest code, best level of error)";
+                    cLevel.appendChild(H);
+                    cLevel.appendChild(Q);
+                    cLevel.appendChild(M);
+                    cLevel.appendChild(l);
+                    newDiv.appendChild(document.createElement("br"));
+                    newDiv.appendChild(cLevel);
+                    var fN = document.createElement("input");
+                    fN.setAttribute("id","fN");
+                    fN.setAttribute("type","text");
+                    var fNLabel = document.createElement("label");
+                    fNLabel.setAttribute("for","fN");
+                    fNLabel.innerHTML = "Full Name:";
+                    newDiv.appendChild(document.createElement("br"));
+                    newDiv.appendChild(fNLabel);
+                    newDiv.appendChild(document.createElement("br"));
+                    newDiv.appendChild(fN);
+
+                    var N = document.createElement("input");
+                    N.setAttribute("id","N");
+                    N.setAttribute("type","text");
+                    var NLabel = document.createElement("label");
+                    NLabel.setAttribute("for","N");
+                    NLabel.innerHTML = "First Name:";
+                    newDiv.appendChild(document.createElement("br"));
+                    newDiv.appendChild(NLabel);
+                    newDiv.appendChild(document.createElement("br"));
+                    newDiv.appendChild(N);
+
+                    
+                    var lN = document.createElement("input");
+                    lN.setAttribute("id","lN");
+                    lN.setAttribute("type","text");
+                    var lNLabel = document.createElement("label");
+                    lNLabel.setAttribute("for","lN");
+                    lNLabel.innerHTML = "Last Name:";
+                    newDiv.appendChild(document.createElement("br"));
+                    newDiv.appendChild(lNLabel);
+                    newDiv.appendChild(document.createElement("br"));
+                    newDiv.appendChild(lN);
+
+                    var email = document.createElement("input");
+                    email.setAttribute("id","email");
+                    email.setAttribute("type","email");
+                    var emailLabel = document.createElement("label");
+                    emailLabel.setAttribute("for","email");
+                    emailLabel.innerHTML = "Email:";
+                    newDiv.appendChild(document.createElement("br"));
+                    newDiv.appendChild(emailLabel);
+                    newDiv.appendChild(document.createElement("br"));
+                    newDiv.appendChild(email);
+
+                    var CphoneNum = document.createElement("input");
+                    CphoneNum.setAttribute("id","CphoneNum");
+                    CphoneNum.setAttribute("type","tel");
+                    var CphoneNumLabel = document.createElement("label");
+                    CphoneNumLabel.setAttribute("for","CphoneNum");
+                    CphoneNumLabel.innerHTML = "Cell Phone Number:";
+                    newDiv.appendChild(document.createElement("br"));
+                    newDiv.appendChild(CphoneNumLabel);
+                    newDiv.appendChild(document.createElement("br"));
+                    newDiv.appendChild(CphoneNum);
+
+                    var company = document.createElement("input");
+                    company.setAttribute("id","company");
+                    company.setAttribute("type","text");
+                    var companyLabel = document.createElement("label");
+                    companyLabel.setAttribute("for","company");
+                    companyLabel.innerHTML = "Company:";
+                    newDiv.appendChild(document.createElement("br"));
+                    newDiv.appendChild(companyLabel);
+                    newDiv.appendChild(document.createElement("br"));
+                    newDiv.appendChild(company);
+
+                    var title = document.createElement("input");
+                    title.setAttribute("id","title");
+                    title.setAttribute("type","text");
+                    var titleLabel = document.createElement("label");
+                    titleLabel.setAttribute("for","title");
+                    titleLabel.innerHTML = "Title:";
+                    newDiv.appendChild(document.createElement("br"));
+                    newDiv.appendChild(titleLabel);
+                    newDiv.appendChild(document.createElement("br"));
+                    newDiv.appendChild(title);
+
+                    var website = document.createElement("input");
+                    website.setAttribute("id","website");
+                    website.setAttribute("type","url");
+                    var websiteLabel = document.createElement("label");
+                    websiteLabel.setAttribute("for","website");
+                    websiteLabel.innerHTML = "Website:";
+                    newDiv.appendChild(document.createElement("br"));
+                    newDiv.appendChild(websiteLabel);
+                    newDiv.appendChild(document.createElement("br"));
+                    newDiv.appendChild(website);
+
+                    var submit = document.createElement("input");
+                    submit.setAttribute("type","submit");
+                    newDiv.appendChild(document.createElement("br"));
+                    newDiv.appendChild(submit)
+                }
+            }
+
+            function MakeCode(){
+                var type = document.getElementById("type").value;
+                if (type == "vcard"){
+                    var vcardFormattedText = "BEGIN:VCARD\nVERSION:4.0\n";
+                    var fN = document.getElementById("fN");
+                    var fullName = fN.value;
+                    if (fullName.length == 0){
+                        alert("Full Name property is required. Please fill it out.");
+                    }
+                    else{
+                        vcardFormattedText += "FN:"+fullName+"\n";
+                        var n = document.getElementById("N");
+                        var lN = document.getElementById("lN");
+
+                        var firstName = n.value;
+                        var lastName = lN.value;
+
+                        if (firstName.length == 0 || lastName.length == 0){
+                            alert("First Name and Last Name properties are required. At least one of them is not filled out. Please fill them out.");
+                        }
+                        else{
+                            vcardFormattedText+="N:"+lastName+";"+firstName+"\n";
+
+                            var email = document.getElementById("email");
+                            var emailVal = email.value;
+
+                            if (emailVal.length != 0){
+                                vcardFormattedText += "EMAIL:"+emailVal+"\n";
+                            }
+
+                            var cPhone = document.getElementById("CphoneNum")
+
+                            var cPn = cPhone.value;
+
+                            if (cPn.length != 0){
+                                vcardFormattedText+="TEL;TYPE=cell:"+cPn+"\n";
+                            }
+
+                            var org = document.getElementById("company");
+                            var orgVal = org.value;
+
+                            if (orgVal.length != 0){
+                                vcardFormattedText += "ORG:"+orgVal+"\n";
+                            }
+
+                            var title = document.getElementById("title");
+                            var titleVal = title.value;
+
+                            if (titleVal.length != 0){
+                                vcardFormattedText += "TITLE:"+titleVal+"\n";
+                            }
+
+                            var website = document.getElementById("website");
+                            var websiteURL = website.value;
+
+                            if (websiteURL.length != 0){
+                                vcardFormattedText+="URL:"+websiteURL+"\n";
+                            }
+
+
+
+                            vcardFormattedText+="END:VCARD";
+                            console.log(vcardFormattedText)
+                            var qrcode = new QRCode("code", {
+                                text: vcardFormattedText,
+                                width: 512,
+                                height: 512,
+                                colorDark : "#000000",
+                                colorLight : "#ffffff",
+                                correctLevel : eval(document.getElementById("correctionLevel").value)}
+                            );
+                        }
+                    }
+                }
+                else if (type == "link"){
+                    var url = document.getElementById("url");
+                    var urlLink = url.value;
+
+                    var qrcode = new QRCode("code", {
+                                text: urlLink,
+                                width: 512,
+                                height: 512,
+                                colorDark : "#000000",
+                                colorLight : "#ffffff",
+                                correctLevel : eval(document.getElementById("correctionLevel").value)}
+                            );
+                }
+            }
+
+            ChangeType();
+        </script>
+    </body>
+</html>

@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Math Game</title>
+        
+        <link rel = "stylesheet" type = "text/css" href = "main.css">
+        <style>
+            body{
+                font-family:"Comic Sans", sans-serif;
+                font-size:2em;
+                color:white;
+                background-color: #000080;
+                user-select: none;
+            }
+            input{
+                width:1.5em;
+                height:1.5em;
+            }
+            button{
+                font-family:"Comic Sans", sans-serif;
+                font-size:1em;
+            }
+        </style>
+    </head>
+    <body>
+        <div id = "options">
+            <button onclick = "clearChecks()">Clear options</button>
+            <button onclick = "selectAll()">Select all</button>
+            <br>
+                <input type = "radio" id = "easy" name = "diff" value = "1" checked = "checked">
+                <label for = "easy">Easy</label>
+                <input type = "radio" id = "med" name = "diff" value = "2">
+                <label for = "med">Medium</label>
+                <input type = "radio" id = "hard" name = "diff" value = "3">
+                <label for = "hard">Hard</label>
+            <fieldset>
+                <legend>Basic Operations</legend>
+                <input type = "checkbox" id = "add" checked><label for = "add">Addition</label><br>
+                <input type = "checkbox" id = "sub"><label for = "sub">Subtraction</label><br>
+                <input type = "checkbox" id = "mult"><label for = "mult">Multiplication</label><br>
+                <input type = "checkbox" id = "div"><label for = "div">Division</label>
+            </fieldset>
+            <fieldset>
+                <legend>Binary Conversions</legend>
+                <input type = "checkbox" id = "BToD"><label for = "BToD">Binary to Decimal</label><br>
+                <input type = "checkbox" id = "DToB"><label for = "DToB">Decimal to Binary</label>
+            </fieldset>
+            <fieldset>
+                <legend>Binary Operations</legend>
+                <input type = "checkbox" value = "Binary Addition" id = "bAdd"><label for = "bAdd">Binary Addition</label><br>
+                <input type = "checkbox" value = "Binary Subtraction" id = "bSub"><label for = "bSub">Binary Subtraction</label><br>
+                <input type = "checkbox" value = "Binary Multiplication" id = "bMult"><label for = "bMult">Binary Multiplication</label><br>
+                <input type = "checkbox" value = "Binary Division" id = "bDiv"><label for = "bDiv">Binary Division</label>
+            </fieldset>
+            <button onclick = "startGame()">Go!</button>
+        </div>
+
+        <script>
+            function clearChecks(){
+                var ids = ["add", "sub", "mult", "div", "BToD","DToB","bAdd","bSub","bMult","bDiv"];
+                for (i = 0; i < ids.length; i++){
+                    var elem = document.getElementById(ids[i]);
+                    elem.checked = false;
+                }
+            }
+            function selectAll(){
+                var ids = ["add", "sub", "mult", "div", "BToD","DToB","bAdd","bSub","bMult","bDiv"];
+                for (i = 0; i < ids.length; i++){
+                    var elem = document.getElementById(ids[i]);
+                    elem.checked = true;
+                }
+            }
+            function startGame(){
+                //check selections
+                var code = [];
+                var ids = ["add", "sub", "mult", "div", "BToD","DToB","bAdd","bSub","bMult","bDiv"];
+                for (i = 0; i < ids.length; i++){
+                    var elem = document.getElementById(ids[i]);
+                    if (elem.checked == true){
+                        code.push(i);
+                    }
+                }
+                var newIds = ["easy","med","hard"];
+                var diff;
+                for (i = 0; i < 3; i++){
+                    var elem = document.getElementById(newIds[i]);
+                    if (elem.checked == true){
+                        diff = elem.value;
+                    }
+                }
+                var JsonCode = JSON.stringify(code);
+                var newwindow = window.open("./game.html?q="+JsonCode+"&d="+JSON.stringify(diff));
+                window.close()
+            }
+        </script>
+    </body>
+</html>

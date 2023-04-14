@@ -1,0 +1,1052 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Shake, Set, Solve</title>
+    <script src="//cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.js"></script>
+    <style type="text/css">
+        @import url('https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap');
+        body {
+            margin: 0;
+            background-color: rgb(219,145,204);
+
+        }
+    </style>
+</head>
+<body>
+
+<script type="text/javascript">
+
+    var config = {
+        type: Phaser.AUTO,
+        scale: {
+            mode: Phaser.Scale.FIT,
+            width: 1920,
+            height: 980
+        },
+        scene: {
+            preload: preload,
+            create: create,
+            update: update
+        }
+    };
+
+//Initialize Variables
+    var timedEvent;
+    var flub, thinking, makeAMove;
+    var thinkingAnimation;
+    var goalSolutionText = "";
+    let solution = [];
+    let cubes = [];
+    let CUBES = [];
+    let resources = [true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true];
+    let forbidden = [false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false];
+    let permitted = [false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false];
+    let required = [false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false];
+    let goal = [null, null, null, null, null, null];
+    let goalLeftParens = [[],[],[],[],[],[],[]];
+    let goalRightParens = [[],[],[],[],[],[],[]];
+    let realGoal = [];
+    var currentCube = {};
+    var goalSet = false;
+    var parenSetting = false;
+    let downArrows = [];
+    var up = -1;
+    var leftParens = true;
+    var parenSets = 0;
+    var pastParens = [];
+    var game = new Phaser.Game(config);
+    var turn = false;
+    var moved = false;
+    var challenge = false;
+    var chNow = false;
+
+//Load in Assets
+    function preload ()
+    {
+        this.load.image('downArrow', 'assets/downarrow.svg');
+        this.load.image('parenButton', 'assets/parenthesesButton.svg');
+        this.load.image('parentheses', 'assets/parentheses.svg');
+        this.load.image('goalSet', 'assets/goalSet.svg');
+        this.load.image('setGoal', 'assets/setGoal.svg');
+        this.load.image('board', 'assets/board.svg');
+        this.load.image('clearButton', 'assets/clearButton.svg');
+        this.load.image('challengeNow', 'assets/chNow.svg');
+        this.load.image('challengeImpossible', 'assets/chImpossible.svg');
+        this.load.image('cancelButton', 'assets/cancel.svg');
+        this.load.image('flub', 'assets/flub.png');
+        this.load.image('paper', 'assets/notebookpaper.svg');
+        this.load.image('leftParenButton', 'assets/leftParenButton.svg');
+        this.load.image('rightParenButton', 'assets/rightParenButton.svg');
+        this.load.image('clearSolutionButton', 'assets/clearSolutionButton.svg');
+        this.load.image('submitButton', 'assets/submitButton.svg');
+        this.load.image('thinker', 'assets/thinker.svg');
+        this.load.image('sadFace', 'assets/sadface.png');
+        this.load.spritesheet('thinking', 'assets/thinkAnim.jpg', {frameWidth:1000, frameHeight:300});
+        this.load.image('makeAMove', 'assets/makeAMove.svg');
+        this.load.spritesheet('cubes', 'assets/cubes.svg', {frameWidth: 100, frameHeight: 100});
+    }
+
+//Initialize and Position Assets
+    function create ()
+    {
+        this.cameras.main.backgroundColor.setTo(219,145,204);
+        var parenText = this.add.text(50, 360, ' ', { fontFamily: 'Serif', fontSize: '50px', color: 'rgb(0,32,96)'});
+        var solutionText = this.add.text(180, 840, '', { fontFamily: 'Patrick Hand', fontSize: '60px', color: "0x000000"}).setOrigin(0,0);
+        var errorText = this.add.text(175,785, '', { fontFamily: 'Serif', fontSize: '50px', color: 'rgb(200,0,0)'});
+        var winText = this.add.text(150,300,'', {fontFamily: 'Serif', fontSize: '200px'});
+        errorText.setDepth(5);
+        solutionText.setVisible(false);
+        var goalSetButton = this.add.image(1050,890,'goalSet');
+        goalSetButton.setVisible(false);
+        goalSetButton.setInteractive();
+        var clearButton = this.add.image(600, 890, 'clearButton');
+        clearButton.setVisible(false);
+        clearButton.setInteractive();
+        var parenButton = this.add.image(180, 890,'parenButton');
+        parenButton.setVisible(false);
+        parenButton.setInteractive();
+        flub = this.add.image(1800,500,'flub');
+        flub.setVisible(false);
+        flub.setInteractive();
+        makeAMove = this.add.image(600, 800, 'makeAMove');
+        makeAMove.setVisible(false);
+        thinking = this.add.sprite(600, 800, 'thinking');
+        thinkingAnimation = this.anims.create({
+            key: 'think',
+            frames: 'thinking',
+            frameRate: 4,
+            repeat: -1
+        });
+        thinking.setVisible(false);
+        for(let i = 0; i < 7; i++){
+          downArrows[i] = this.add.image(42+186*i, 480, 'downArrow');
+          downArrows[i].displayWidth = 80;
+          downArrows[i].setInteractive();
+          downArrows[i].setVisible(false);
+          downArrows[i].setDepth(3);
+        }
+
+        var board;
+
+        for(let i = 0; i < 24; i++){
+          cubes[i] = this.add.image(0, 0, 'cubes', i);
+          cubes[i].setDepth(1);
+          cubes[i].setScale(0.7);
+          cubes[i].setInteractive();
+          this.input.setDraggable(cubes[i]);
+          CUBES[i] = this.add.image(0, 0, 'cubes', i);
+          CUBES[i].setVisible(false);
+          cubes[i].setData('number', i);
+        }
+
+        shake();
+        var sign = this.add.image(600, 485, 'setGoal');
+        sign.setScale(0.9);
+        //Clear Cubes from Goal
+        clearButton.on('pointerdown', function(){
+          for(let i = 0; i < cubes.length; i++){
+            cubes[i].x = CUBES[i].x;
+            cubes[i].y = CUBES[i].y;
+            cubes[i].angle = CUBES[i].angle;
+            cubes[i].setScale(0.7);
+          }
+          for(let i = 0; i < goal.length; i++){
+            goal[i] = null;
+          }
+          for(let i = 0; i < resources.length; i++){
+            resources[i] = true;
+          }
+          clearParens();
+          parenText.setText(' ');
+          pastParens.splice(0, pastParens.length);
+          parenButton.setVisible(false);
+          goalSetButton.setVisible(false);
+          parenSets = 0;
+          clearButton.setVisible(false);
+        });
+        //Set Goal
+        goalSetButton.on('pointerdown', function(){
+          if(!parenSetting){
+            this.visible = false;
+            goalSet = true;
+            board = this.scene.add.image(600,360,'board');
+            board.setScale(0.8);
+            sign.setVisible(false);
+            transferGoal();
+            parenText.setText(' ');
+            parenButton.setVisible(false);
+            clearButton.setVisible(false);
+            flub.setVisible(true);
+            insertGoalToString();
+            clearParens();
+            move();
+          }
+        });
+        //Arrows for Parentheses Setting
+        for(let i = 0; i < 7; i++){
+          downArrows[i].on('pointerdown', function(){
+            var paren = this.scene.add.image(downArrows[i].x,607,'parentheses');
+            paren.setDepth(2);
+            paren.setAngle(leftParens?180:0);
+            paren.x += (leftParens?20 - 10*goalLeftParens[i].length:-20 + 10*goalRightParens[i].length);
+            leftParens?goalLeftParens[i].push(paren):goalRightParens[i].push(paren);
+            leftParens = !leftParens;
+            hideArrows();
+            parenText.setText(' ');
+            pastParens.push(i);
+            if(!leftParens) placeParentheses(parenText);
+            if(leftParens) parenSetting = false;
+          });
+        }
+        //Button to Start Setting Parentheses
+        parenButton.on('pointerdown', function(){
+          placeParentheses(parenText);
+        });
+
+        //Upon Starting to Drag a Cube
+        this.input.on('dragstart', function (pointer, gameObject) {
+          currentCube["angle"] = gameObject.angle;
+          currentCube["x"] = gameObject.x;
+          currentCube["y"] = gameObject.y;
+          if(!goalSet){
+            gameObject.setScale(1.3);
+            gameObject.setDepth(2);
+            gameObject.angle = 0;
+          }else{
+            gameObject.setScale(0.8);
+            gameObject.setDepth(2);
+            gameObject.angle = 0;
+          }
+        });
+
+        //While a Cube is Being Dragged
+        this.input.on('drag', function (pointer, gameObject, dragX, dragY) {
+          gameObject.x = dragX;
+          gameObject.y = dragY;
+        });
+
+        //When a Cube is Dropped
+        this.input.on('dragend', function (pointer, gameObject) {
+          //Goalsetting Phase
+          if(!goalSet){
+            gameObject.setDepth(0);
+            let i = getSlot(gameObject.x, gameObject.y);
+            let j = getSlot(currentCube["x"], currentCube["y"]);
+            if(i != null){
+              if(goal[i] == null){
+                if(j != null) {
+                  goal[j] = null;
+                }else{
+                  resources[gameObject.getData('number')] = false;
+                }
+                goal[i] = gameObject;
+                gameObject.x = 141 + 183.5*i;
+                gameObject.y = 607;
+              }else{
+                if(j != null){
+                  goal[i].x = 141 + 183.5*j;
+                  goal[j] = goal[i];
+                  goal[i] = gameObject;
+                  gameObject.x = 141 + 183.5*i;
+                  gameObject.y = 607;
+                }else{
+                  gameObject.setScale(0.7);
+                  gameObject.setDepth(1);
+                  gameObject.x = currentCube["x"];
+                  gameObject.y = currentCube["y"];
+                  gameObject.angle = currentCube["angle"];
+                }
+              }
+            }else{
+              gameObject.setDepth(1);
+              gameObject.x = currentCube["x"];
+              gameObject.y = currentCube["y"];
+              if(j == null){
+                gameObject.setScale(0.7);
+                gameObject.angle = currentCube["angle"];
+              }
+            }
+            if(checkGoal()){
+              goalSetButton.setVisible(true);
+              if(parenSets < (getTokens().length-3)/2) parenButton.setVisible(true);
+            }else {
+              goalSetButton.setVisible(false);
+              parenButton.setVisible(false);
+            }
+          }else{
+            //Gameplay Phase
+            var index = gameObject.getData('number');
+            gameObject.setScale(0.7);
+            gameObject.setDepth(1);
+            switch(getSection(gameObject)){
+              case "forbidden":
+                var l = countTrues(forbidden);
+                gameObject.x = 135 + 83*(l%4);
+                gameObject.y = 152 + 80*(Math.floor(l/4));
+                resources[index] = false;
+                forbidden[index] = true;
+                gameObject.disableInteractive();
+                moved = true;
+                break;
+              case "permitted":
+                var l = countTrues(permitted);
+                gameObject.x = 477 + 83*(l%4);
+                gameObject.y = 152 + 80*(Math.floor(l/4));
+                resources[index] = false;
+                permitted[index] = true;
+                gameObject.disableInteractive();
+                moved = true;
+                break;
+              case "required":
+                var l = countTrues(required);
+                gameObject.x = 818 + 83*(l%4);
+                gameObject.y = 152 + 80*(Math.floor(l/4));
+                resources[index] = false;
+                required[index] = true;
+                gameObject.disableInteractive();
+                moved = true;
+                break;
+              default:
+                gameObject.x = currentCube["x"];
+                gameObject.y = currentCube["y"];
+                gameObject.angle = currentCube["angle"];
+            }
+          }
+          if(!goalSet){
+              for(let i = 0; i < goal.length; i++){
+                  if (goal[i] != null) clearButton.setVisible(true);
+              }
+          }
+        });
+        var leftParenButton = this.add.image(1250,915,'leftParenButton');
+        var rightParenButton = this.add.image(1375,915,'rightParenButton');
+        leftParenButton.setVisible(false);
+        leftParenButton.setInteractive();
+        rightParenButton.setVisible(false);
+        rightParenButton.setInteractive();
+        var submitButton = this.add.image(1550,915,'submitButton');
+        submitButton.setVisible(false);
+        submitButton.setInteractive();
+        var clearSolutionButton = this.add.image(1775,915,'clearSolutionButton');
+        clearSolutionButton.setVisible(false);
+        clearSolutionButton.setInteractive();
+        var paper = this.add.image(600,950,'paper');
+        paper.setVisible(false);
+        paper.setScale(.4);
+        let challengeButtons = [];
+        var rect = this.add.rectangle(1550,500,700,500,0xc16fb5);
+        var challengeNow = this.add.image(1550,350,'challengeNow');
+        var challengeImpossible = this.add.image(1550,500,'challengeImpossible');
+        var cancelButton = this.add.image(1550,650,'cancelButton');
+        rect.setStrokeStyle(4, 0xffffff);
+        rect.setDepth(5);
+        challengeNow.setDepth(5);
+        challengeImpossible.setDepth(5);
+        cancelButton.setDepth(5);
+        challengeButtons.push(rect,challengeNow,challengeImpossible,cancelButton);
+        for(let i = 0; i < challengeButtons.length; i++){
+            challengeButtons[i].setInteractive();
+            challengeButtons[i].setVisible(false);
+        }
+        var thinker = this.add.image(1500,600,'thinker');
+        thinker.setVisible(false);
+        thinker.setScale(1.5);
+        var sadFace = this.add.image(1500,460,'sadFace');
+        sadFace.setVisible(false);
+
+        //When Flub is Clicked
+        flub.on('pointerdown', function(){
+            for(let i = 0; i < challengeButtons.length; i++) challengeButtons[i].setVisible(true);
+        });
+
+        //Deals with Challenge Buttons
+        cancelButton.on('pointerdown',function(){
+            console.log("pressed");
+            for(let i = 0; i < challengeButtons.length; i++) challengeButtons[i].setVisible(false);
+        });
+
+        challengeNow.on('pointerdown',function(){
+            challenge = true;
+            for(let i = 0; i < challengeButtons.length; i++) challengeButtons[i].setVisible(false);
+            flub.disableInteractive();
+            makeAMove.setVisible(false);
+            leftParenButton.setVisible(true);
+            rightParenButton.setVisible(true);
+            paper.setVisible(true);
+            solutionText.setVisible(true);
+            clearSolutionButton.setVisible(true);
+            submitButton.setVisible(true);
+            solutionText.setDepth(1);
+            for(let i = 0; i < cubes.length; i++){
+                this.scene.input.setDraggable(cubes[i],false);
+                if(!forbidden[i]) cubes[i].setInteractive();
+                if(required[i]) console.log(getChar(cubes[i]));
+            }
+            for(let i = 0; i < realGoal.length; i++) realGoal[i].disableInteractive();
+        })
+
+        //Buttons for Solving Phase
+        leftParenButton.on('pointerdown',function(){
+            goalSolutionText += "(";
+            solution.push("(");
+            solutionText.setText(goalSolutionText);
+        });
+
+        rightParenButton.on('pointerdown',function(){
+            goalSolutionText += ")";
+            solution.push(")");
+            solutionText.setText(goalSolutionText);
+        });
+
+        clearSolutionButton.on('pointerdown',function(){
+            for(let i = 0; i < 24; i++){
+                if(permitted[i] || required[i] || resources[i]){
+                    cubes[i].setVisible(true);
+                    cubes[i].setInteractive(true);
+                }
+            }
+            insertGoalToString();
+            errorText.setText("");
+            solution = [];
+            solutionText.setText(goalSolutionText);
+        });
+
+        submitButton.on('pointerdown',function(){
+            var unusedReq = false;
+            var tooShort = false;
+            if(solution.length <= 1) tooShort = true;
+            for(let i = 0; i < 24; i++){
+                if(required[i]){
+                    if(cubes[i].visible) unusedReq = true;
+                }
+            }
+            if(unusedReq){
+                errorText.setText('Use all cubes from required!');
+            }else if(tooShort){
+                errorText.setText('Solution must use at least two cubes!');
+            }else{
+                console.log(solution);
+                console.log(solveExpression(solution));
+                flub.setVisible(false);
+                rightParenButton.setVisible(false);
+                leftParenButton.setVisible(false);
+                clearSolutionButton.setVisible(false);
+                submitButton.setVisible(false);
+                board.setVisible(false);
+                errorText.setText('');
+                for(let i = 0; i < 24; i++){
+                    cubes[i].setVisible(false);
+                }
+                if(checkSolution()){
+                    thinker.setVisible(true);
+                    winText.setText("You Win!");
+                    winText.setColor('rgb(0,200,0)');
+                }else{
+                    sadFace.setVisible(true);
+                    winText.setText("You Lose!");
+                    winText.setColor('rgb(200,0,0)');
+                }
+
+            }
+        });
+
+        //For Clicking on Cubes After Challenge
+        for(let i = 0; i < 24; i++){
+          cubes[i].on('pointerdown', function(){
+            var unusedReq = false;
+            if(challenge){
+                cubes[i].setVisible(false);
+                var char = getChar(cubes[i]);
+                var prev = String.prototype.slice.call(goalSolutionText,goalSolutionText.length-1);
+                if(char == "√" && (getType(prev) == "2way" || prev == " " || prev == "√")) solution.push("sq");
+                if(char == "/"){
+                    goalSolutionText += "÷";
+                }else if(char == "*"){
+                    goalSolutionText += "×";
+                }else{
+                    goalSolutionText += char;
+                }
+                solution.push(char);
+                if(resources[i]){
+                    for(let j = 0; j < 24; j++){
+                        if(resources[j]) cubes[j].disableInteractive();
+                    }
+                }
+                solutionText.setText(goalSolutionText);
+            }
+          });
+        }
+
+        //Goal is Converted from Cubes to a String and is Displayed When Solving
+        function insertGoalToString(){
+            goalSolutionText = "";
+            let tokens = getTokens();
+            console.log(tokens);
+            for(let i = 0; i < tokens.length; i++){
+                if(tokens[i] == "/"){
+                    goalSolutionText += "÷";
+                }else if(tokens[i] == "*"){
+                    goalSolutionText += "×";
+                }else if(tokens[i] != "sq"){
+                    goalSolutionText += tokens[i];
+                }
+            }
+            goalSolutionText += " = ";
+            solutionText.setText(goalSolutionText);
+        }
+
+
+    }
+
+    //Counts Numbers of Trues in an Array of Booleans
+    function countTrues(arr){
+        var count = 0
+        for (let i = 0; i < arr.length; i++){
+            if(arr[i]) count++;
+        }
+        return count;
+    }
+
+    //Begin Parenthesis Placement
+    function placeParentheses(text){
+      let goalTokens = getTokens();
+      var parenCount = 0;
+      for(let i = 0; i < goalTokens.length; i++){
+        if (goalTokens[i] == "(") parenCount++;
+      }
+      if(parenSets >= ((goalTokens.length-2*parenCount)-3)/2){
+        text.setText('No More Parentheses Can Be Placed');
+        return;
+      }
+      text.setDepth(2);
+      parenSetting = true;
+      let possible = possibleParens();
+      if(leftParens){
+        for(let l = 0; l < possible.length; l++){
+          if(possible[l] != 0) downArrows[l].setVisible(true);
+        }
+      }else{
+        let rightParens = possible[pastParens[pastParens.length-1]];
+        for(let i = 0; i < rightParens.length; i++){
+          downArrows[rightParens[i]].setVisible(true);
+        }
+      }
+      text.setText(leftParens?'Place a Left Parenthesis':'Place a Right Parenthesis');
+      if(!leftParens) parenSets++;
+    }
+
+    //Hide All Arrows After a Set of Parentheses is Placed
+    function hideArrows(){
+      for(let i = 0; i < 7; i++){
+        downArrows[i].setVisible(false);
+      }
+    }
+
+    //Detect Which Spaces Can Possibly Take Parentheses
+    function possibleParens(){
+      let possible = [];
+      if(getTokens().length <= 3) return possible;
+      let tempGoal = goal;
+      for(let l = 0; l < 7; l++){
+        goal = tempGoal;
+        if(goal[l] != null && getType(goal, l-1) != "num" && !lastNumber(l)){
+          let possibleRight = [];
+          goal = goal.slice(l, goal.length);
+          for(let r = 0; r < goal.length; r++){
+            if(goal[r] != null && getType(goal, r+1) != "num" && getType(goal, r+1) != "1way" && !firstNumber(r) && parenMap(l,r + l + 1)) possibleRight.push(r+l+1);
+          }
+          possible.push(possibleRight);
+        }else possible.push([]);
+      }
+      goal = tempGoal;
+      return possible;
+    }
+
+    //Ensures that the Pair of Parentheses (l,r) is Possible
+    function parenMap(l,r){
+      for(let i = 0; i < pastParens.length; i+=2){
+        if(pastParens[i] > l){
+          if(!(r >= pastParens[i+1] || r <= pastParens[i])) return false;
+        }else if(pastParens[i] == l){
+          if(r == pastParens[i+1]) return false;
+        }else if(pastParens[i] < l && pastParens[i+1] > l){
+          if(r > pastParens[i+1]) return false;
+        }
+      }
+      return true;
+    }
+
+    //Special Cases for possibleParens()
+    function firstNumber(index){
+      for(let i = index; i >= 0; i--){
+        if(getType(goal, i) == "1way" || getType(goal, i) == "2way") return false;
+      }
+      return true;
+    }
+
+    function lastNumber(index){
+      for(let i = index; i < goal.length; i++){
+        if(getType(goal, i) == "1way" || getType(goal, i) == "2way") return false;
+      }
+      return true;
+    }
+
+    //Detects Section a Cube is Placed in
+    function getSection(gameObject){
+      if(gameObject.y < 72 || gameObject.y > 520) return null;
+      if(gameObject.x >= 92 && gameObject.x < 434) return "forbidden";
+      if(gameObject.x >= 434 && gameObject.x < 775) return "permitted";
+      if(gameObject.x >= 775 && gameObject.x < 1112) return "required";
+      return null;
+    }
+
+    //Detects Slot a Cube is Placed in When Setting the Goal
+    function getSlot(x, y){
+      if(y < 544 || y > 684) return null;
+      if(x >= 64 && x < 204) return 0;
+      if(x >= 250 && x < 390) return 1;
+      if(x >= 436 && x < 576) return 2;
+      if(x >= 622 && x < 762) return 3;
+      if(x >= 808 && x < 948) return 4;
+      if(x >= 994 && x < 1134) return 5;
+      return null;
+    }
+
+    //Moves Goal Cubes from the Goalsetting Screen to the Main Screen
+    function transferGoal(){
+      for(let i = 0; i < realGoal.length; i++){
+        var space = spaceBefore(i);
+        realGoal[i].setScale(0.7);
+        realGoal[i].setDepth(10);
+        realGoal[i].x = 263 + space;
+        realGoal[i].y = 570;
+        realGoal[i].disableInteractive();
+      }
+    }
+
+    //Creates Space to Indicate Parentheses
+    function spaceBefore(index){
+      var space = index*85;
+      var shift = 0;
+      for(let i = 0; i < goal.length; i++){
+        if(goal[i] == null) shift++;
+        else break;
+      }
+      for(let i = 0; i < pastParens.length; i++){
+        if(pastParens[i] > shift && pastParens[i] <= index+shift) space += 40;
+      }
+      return space;
+    }
+
+    //Solves Expressions
+    function solveExpression(expresionTokens){
+      let solutions = [];
+      var parenCount = 0;
+      for(let i = 0; i < expresionTokens.length; i++){
+          if (expresionTokens[i] == "(") parenCount++;
+      }
+      var nOps = Math.floor((expresionTokens.length-2*parenCount)/2);
+      if(nOps == 0){
+        solutions.push(parseFloat(expresionTokens[0]));
+      }else if(nOps == 1){
+        console.log(expresionTokens);
+        if(parenCount == 1){
+            solutions.push(doMath(expresionTokens[0], expresionTokens[1], expresionTokens[2]));
+        }
+        solutions.push(doMath(expresionTokens[0], expresionTokens[1], expresionTokens[2]));
+      }else if(parenCount > 0){
+        let nonParens = [];
+        var open = 0;
+        var uniqueParens = 0;
+        let openings = [];
+        let closings = [];
+        for(let i = 0; i < expresionTokens.length; i++){
+            if(expresionTokens[i] == "("){
+                open++;
+                if(open == 1){
+                    openings.push(i+1);
+                    uniqueParens++;
+                }
+            }
+            if (open == 0) nonParens.push(expresionTokens[i]);
+            if(expresionTokens[i] == ")"){
+                open--;
+                if(open == 0){
+                    closings.push(i);
+                    nonParens.push("p"+uniqueParens);
+                }
+            }
+        }
+        console.log(openings);
+        console.log(closings);
+        console.log(uniqueParens);
+        console.log(nonParens);
+        if(uniqueParens == 1){
+            let parenSolutions = solveExpression(Array.prototype.slice.call(expresionTokens, openings[0], closings[0]));
+            console.log(Array.prototype.slice.call(expresionTokens, openings[0], closings[0]));
+            console.log(parenSolutions);
+            for(let i = 0; i < parenSolutions.length; i++){
+                let temp = [];
+                for(let j = 0; j < nonParens.length; j++){
+                    temp.push(nonParens[j]);
+                    if(temp[j] == "p1") temp[j] = parenSolutions[i].toString();
+                }
+                console.log(temp);
+                Array.prototype.push.apply(solutions, solveExpression(temp));
+            }
+        }else{
+            let parenSolutions = [];
+            let indexes = [];
+            var possibilities = 1;
+            for(let i = 0; i < uniqueParens; i++){
+                parenSolutions.push(solveExpression(Array.prototype.slice.call(expresionTokens, openings[i], closings[i])));
+                indexes.push(0);
+                possibilities *= parenSolutions[i].length;
+            }
+            console.log(parenSolutions);
+            for(let i = 0; i < possibilities; i++){
+                let temp = [];
+                for(let k = 0; k < nonParens.length; k++){
+                    temp.push(nonParens[k]);
+                }
+                for(let j = 0; j < uniqueParens; j++){
+                   for(let k = 0; k < temp.length; k++){
+                       if(temp[k] == "p"+(j+1)){
+                           temp[k] = parenSolutions[j][indexes[j]].toString();
+                       }
+                   }
+                }
+                Array.prototype.push.apply(solutions, solveExpression(temp));
+                indexes[0]++;
+                for(let j = 0; j < uniqueParens; j++){
+                    if(indexes[j] == parenSolutions[j].length){
+                        indexes[j] = 0;
+                        indexes[j+1] += 1;
+                    }
+                }
+            }
+
+        }
+      }else{
+        for(let i = 0; i < nOps; i++){
+          let tempTokens = [];
+          for(let j = 0; j < expresionTokens.length; j++){
+            tempTokens.push(expresionTokens[j]);
+          }
+          if(i != nOps - 1 && tempTokens[2*i+2] == "sq" && tempTokens[2*i+3] == "√"){
+          }else{
+            console.log(tempTokens);
+            console.log(doMath(tempTokens[2*i], tempTokens[2*i+1], tempTokens[2*i+2]));
+            tempTokens.splice(2*i, 3, doMath(tempTokens[2*i], tempTokens[2*i+1], tempTokens[2*i+2]).toString());
+            Array.prototype.push.apply(solutions, solveExpression(tempTokens));
+          }
+        }
+      }
+      return solutions;
+    }
+
+    //Do Math between Two Numbers and an Operation
+    function doMath(val1, op, val2){
+      if(val1 == "sq") val1 = 2;
+      val1 = parseFloat(val1);
+      val2 = parseFloat(val2);
+      switch(op){
+        case '+': return val1 + val2;
+        case '-': return val1 - val2;
+        case '*': return val1 * val2;
+        case '/': return val1 / val2;
+        case '^': return Math.pow(val1, val2);
+        case '√': return Math.pow(val2, 1/val1);
+      }
+    }
+
+    //Converts Goal into an Array of Tokens
+    function getTokens(){
+      let result = [];
+      var shift = 0;
+        for(let i = 0; i < goal.length; i++){
+          if(goal[i] == null) shift++;
+          else break;
+        }
+      for(let i = 0; i < realGoal.length; i++){
+        var char = getChar(realGoal[i]);
+        for(let j = 0; j < goalLeftParens[i+shift].length; j++) result.push("(");
+        for(let j = 0; j < goalRightParens[i+shift].length; j++) result.push(")");
+        if(getType(realGoal, i) == "num" && getType(realGoal, i+1) == "num") {
+          result.push(char+getChar(realGoal[i+1]));
+        }else if(getType(realGoal, i) == "num" && getType(realGoal, i-1) == "num"){
+        }else if(char == "√" && getType(realGoal, i-1) != "num"){
+          result.push('sq');
+          result.push(char);
+        }else{
+          result.push(char);
+        }
+      }
+      for(let j = 0; j < goalLeftParens[realGoal.length+shift].length; j++) result.push("(");
+      for(let j = 0; j < goalRightParens[realGoal.length+shift].length; j++) result.push(")");
+      return result;
+    }
+
+    //Gets Character from the Frame of the Cube on the Spritesheet
+    function getChar(cube){
+      switch(cube.frame["name"]){
+        case 0: return "0";
+        case 1: return "1";
+        case 2: return "2";
+        case 3: return "3";
+        case 4: return "*";
+        case 5: return "/";
+        case 6: return "0";
+        case 7: return "1";
+        case 8: return "2";
+        case 9: return "3";
+        case 10: return "+";
+        case 11: return "-";
+        case 12: return "4";
+        case 13: return "5";
+        case 14: return "6";
+        case 15: return "-";
+        case 16: return "*";
+        case 17: return "^";
+        case 18: return "7";
+        case 19: return "8";
+        case 20: return "9";
+        case 21: return "+";
+        case 22: return "/";
+        case 23: return "√";
+      }
+    }
+
+    //Checks Goal to See if it Equals a Number
+    function checkGoal(){
+      let starts = [];
+      let ends = [];
+      for(let i = 0; i < 7; i++){
+        if(goal[i] != null && goal[i-1] == null) starts[starts.length] = i;
+        if(goal[i] == null && goal[i-1] != null) ends[ends.length] = i;
+      }
+      if(starts.length != 1) return false;
+
+      realGoal = goal.slice(starts[0], ends[0]);
+
+      for(let i = 0; i < realGoal.length; i++){
+        var current = getType(realGoal, i);
+        var next;
+        var previous;
+        if(i+1 == realGoal.length){
+          next = null;
+        }else{
+          next = getType(realGoal, i+1);
+        }
+        if(i == 0) {
+          previous = null;
+        }else{
+          previous = getType(realGoal, i-1);
+        }
+        if(current == "2way"){
+          if(previous != "num" || next == "2way" || next == null) return false;
+        }else if(current == "1way"){
+          if(previous == "num" || next == "2way" || next == null) return false;
+        }else if(current == "num"){
+          if(previous == "num" && next == "num") return false;
+        }
+      }
+      return true;
+    }
+
+    //Randomizes Cubes
+    function shake(){
+
+      for(let i = 0; i < 4; i++){
+        for(let j = 0; j < 6; j++){
+          var roll = Math.floor(Math.random()*6);
+          cubes[i*6+j].setFrame(roll+6*i);
+          CUBES[i*6+j].setFrame(roll+6*i);
+        }
+      }
+      for(let i = 0; i < 24; i++){
+        do{
+          cubes[i].x = Phaser.Math.Between(1250, 1600);
+          cubes[i].y = Phaser.Math.Between(120, 820);
+          cubes[i].angle = Phaser.Math.Between(-20, 20);
+        }
+        while(touchingAnotherCube(i));
+        CUBES[i].x = cubes[i].x;
+        CUBES[i].y = cubes[i].y;
+        CUBES[i].angle = cubes[i].angle;
+      }
+    }
+
+    //Gets Type of Cube: Number, 2 or 1-way Operation
+    function getType(array, index){
+      if(array[index] == null) return null;
+      switch(array[index].frame["name"]){
+        case 0: return "num";
+        case 1: return "num";
+        case 2: return "num";
+        case 3: return "num";
+        case 4: return "2way";
+        case 5: return "2way";
+        case 6: return "num";
+        case 7: return "num";
+        case 8: return "num";
+        case 9: return "num";
+        case 10: return "2way";
+        case 11: return "2way";
+        case 12: return "num";
+        case 13: return "num";
+        case 14: return "num";
+        case 15: return "2way";
+        case 16: return "2way";
+        case 17: return "2way";
+        case 18: return "num";
+        case 19: return "num";
+        case 20: return "num";
+        case 21: return "2way";
+        case 22: return "2way";
+        case 23: if(getType(array, index-1) != "num") return "1way";
+          else return "2way";
+        default: return null;
+      }
+    }
+
+    //Checks if a Cube is Touching Another
+    function touchingAnotherCube(index){
+      for(let i = 0; i < index; i++){
+        if(Math.abs(cubes[index].y - cubes[i].y) < 80 && Math.abs(cubes[index].x - cubes[i].x) < 80){
+          return true;
+        }
+      }
+      for(let i = index + 1; i < 24; i++){
+        if(Math.abs(cubes[index].y - cubes[i].y) < 80 && Math.abs(cubes[index].x - cubes[i].x) < 80){
+          return true;
+        }
+      }
+      return false;
+    }
+
+    //Removes Saved Parentheses when Goal is Cleared
+    function clearParens(){
+        for(let i = 0; i < goalRightParens.length; i++){
+          for(let j = 0; j < goalRightParens[i].length; j++){
+            goalRightParens[i][j].destroy();
+          }
+        }
+        for(let i = 0; i < goalLeftParens.length; i++){
+          for(let j = 0; j < goalLeftParens[i].length; j++){
+            goalLeftParens[i][j].destroy();
+          }
+        }
+    }
+
+    //Does a Turn for Either the Player or the Computer
+    function move(){
+        turn = !turn;
+        moved = !moved;
+        if(!turn){
+            disableResources();
+            setTimeout("cpuMove()", Math.floor(Math.random()*1000 + 1000));
+        }
+        if(turn) enableResources();
+    }
+
+    //Moves a Random Cube to a Random Section
+    function cpuMove(){
+        var index = randomResourceIndex();
+        var cube = cubes[index];
+        switch(Math.floor(Math.random()*3)){
+            case 0:
+                var l = countTrues(forbidden);
+                cube.x = 135 + 83*(l%4);
+                cube.y = 152 + 80*(Math.floor(l/4));
+                cube.angle = 0;
+                resources[index] = false;
+                forbidden[index] = true;
+                cube.disableInteractive();
+                break;
+            case 1:
+                var l = countTrues(permitted);
+                cube.x = 477 + 83*(l%4);
+                cube.y = 152 + 80*(Math.floor(l/4));
+                cube.angle = 0;
+                resources[index] = false;
+                permitted[index] = true;
+                cube.disableInteractive();
+                break;
+            case 2:
+                var l = countTrues(required);
+                cube.x = 818 + 83*(l%4);
+                cube.y = 152 + 80*(Math.floor(l/4));
+                cube.angle = 0;
+                resources[index] = false;
+                required[index] = true;
+                cube.disableInteractive();
+                break;
+            default:
+                break;
+        }
+        moved = true;
+    }
+
+    //Can be Implemented to Allow the CPU to Move More Intelligently
+    function getCpuCube(){
+    }
+
+    //Helps Select a Random Cube
+    function randomResourceIndex(){
+        let trues = [];
+        for(let i = 0; i < resources.length; i++){
+            if(resources[i]) trues.push(i);
+        }
+        index = trues[Math.floor(Math.random()*trues.length)];
+        return index;
+    }
+
+    //Disables Cubes from Being Moved
+    function disableResources(){
+      for(let i = 0; i < CUBES.length; i++) if(resources[i]) cubes[i].disableInteractive();
+      flub.disableInteractive();
+      thinking.setVisible(true);
+      thinking.play('think');
+      makeAMove.setVisible(false);
+      console.log("disable");
+    }
+
+    //Enables Cubes to Be Moved
+    function enableResources(){
+      for(let i = 0; i < CUBES.length; i++) if(resources[i]) cubes[i].setInteractive();
+      flub.setInteractive();
+      thinking.setVisible(false);
+      makeAMove.setVisible(true);
+      console.log("enable");
+    }
+
+    //Compares Solution to Goal
+    function checkSolution(){
+        let goalNums = [...new Set(solveExpression(getTokens()))];
+        let solNums = [...new Set(solveExpression(solution))];
+        if(solNums.length != 1) return false;
+        for(let i = 0; i < goalNums.length; i++){
+            if (goalNums[i] == solNums[0]) return true;
+        }
+        return false;
+    }
+
+    //Controls for Dynamic Objects
+    function update (){
+      if(parenSetting){
+        for(let i = 0; i < 7; i++){
+          if(downArrows[i].y == 440) up = 1;
+          if(downArrows[i].y == 480) up = -1;
+          downArrows[i].y += up*.5;
+        }
+      }else{
+          if(moved) move();
+      }
+    }
+
+</script>
+
+</body>
+</html>

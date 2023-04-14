@@ -1,0 +1,117 @@
+<!doctype html>
+<html>
+    <head>
+        <title>Color Picker</title>
+        <script src = "conversion.js"></script>
+        <style>
+            body{
+                text-align: center;
+            }
+
+            .colorSelection{
+                border-style: solid;
+                border-radius: 10px;
+                width: auto;;
+                text-align: center;
+                margin:auto;
+                display: inline-block;
+                margin-left: 1%;
+                margin-top: 2%;
+            }
+
+            .colorSelection h6{
+                font-size: 110%;
+            }
+
+            .resultsMenu{
+                border-style: solid;
+                border-radius: 10px;
+                background-color: white;
+                width: 35%;
+                height: 98vh;
+                display: inline-block;
+            }
+
+            .resultsMenu h1{
+                font-family:sans-serif;
+            }
+
+            span{
+                font-family: sans-serif;
+                font-size: 2em;
+            }
+
+            .chart{
+                width: 80%;
+                height: 25.5em;
+                background-color: #ffffff;
+                display: inline-block;
+            }
+
+            .chart div{
+                display: inline-block;
+            }
+
+            .redColumn{
+                background-color: #ff0000;
+                position: relative;
+                bottom:0%;
+               /* transform: translateY(-100%);*/
+                width: 33%
+            }
+            .greenColumn{
+                background-color: #00ff00;
+                position: relative;
+                bottom:0%;
+              /*  transform: translateY(-100%);*/
+                width: 33%
+            }
+            .blueColumn{
+                background-color: #0000ff;
+                position: relative;
+                bottom:0%;
+               /* transform: translateY(-100%);*/
+                width: 33%
+            }
+
+            .hiddenColumn{
+                background-color: rgba(0, 0, 0, 0);
+                position: relative;
+                bottom:0%;
+               /* transform: translateY(-100%);*/
+                width: 1px;
+            }
+            .Cyan{
+                color:#00ffff;
+                background-color:#cccccc
+            }
+            .Magenta{
+                color:#ff00ff;
+                background-color:#cccccc
+            }
+            .Yellow{
+                color:#ffff00;
+                background-color:#cccccc
+            }
+            .Black{
+                color:#000000;
+                background-color:#cccccc
+            }
+            .printButton{
+                border-style: solid;
+                border-radius:10px;
+                border-color: black;
+                background-color: white;
+                color:black;
+                font-family:sans-serif;
+                margin: 2%;
+            }
+        </style>
+    </head>
+    <body id = "body">
+        <div class = "colorsDiv" id = "colorsDiv">
+        </div>
+        <script src = "script.js"></script>
+
+    </body>
+</html>

@@ -1,0 +1,537 @@
+<!doctype html>
+<html>
+    <head>
+        <title>Frgosher For Passover</title>
+        <meta charset = "utf-8">
+        <link rel = "icon" href = "./frgo.png">
+        <style>
+            @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;500&family=IBM+Plex+Sans+Hebrew:wght@600&display=swap');
+            body{
+                touch-action: none;
+            }
+        </style>
+    </head>
+    <body>
+
+        <canvas id = "c" width = "1920" height = "1080"></canvas>
+        <div id = "mobileControls" style = "display:none">
+            <img src="./mobileLeft.png"  style = "user-select:none;-webkit-touch-callout: none;" id = "mobileLeft" ontouchstart="mobileButtons(0,true)" ontouchend="mobileButtons(0,false)">
+            <img src="./mobileSpace.png" style = "user-select:none;-webkit-touch-callout: none;"  id = "mobileSpace" ontouchstart="mobileButtons(1,true)" ontouchend="mobileButtons(1,false)">
+            <img src="./mobileRight.png" style = "user-select:none;-webkit-touch-callout: none;" id = "mobileRight"  ontouchstart="mobileButtons(2,true)" ontouchend="mobileButtons(2,false)">
+        </div>
+        <div style = "display:none">
+            <img src = "./cake.png" id = "cake">
+            <img src = "./matzo.png" id = "matzo">
+            <img src = "./frgo.png" id = "frgo">
+            <img src = "./bread.png" id = "bread">
+            <img src = "./ristorante.jpg" id = "ristorante">
+            <img src = "./garlicbread.png" id = "gbread">
+            <img src = "./matzoBackground.png" id = "mback">
+            
+            <img src = "./garlicbreadflies.png" id = "gbreadflies">
+        </div>
+        
+        <script>
+            //Frgo manuevers around the screen, catching kosher for passover items and burning Chametz with his laser eyes. If chametz reaches the ground, or frgo eats chametz,you lose a life. (5 kllives for the ground ,10 for eating) If kosher food touches the ground, you lose 5 lifes. If you eat kosher food, you regain a life with a maximum of 50 starting lives
+            var canvas = document.getElementById("c");
+            var context = canvas.getContext("2d");
+
+            var frgoX = canvas.width/2;
+            var frgoDir = 1;
+            var lives = 100;
+            var keysDown = [];
+            var frgoSpeed = 25;
+            var foodstuffs = [];
+            var lasers = [];
+            var startTime = Date.now();
+            var score = 0;
+            var damage = 0;
+            var nightNum = 1;
+            var isday = false;
+            var matzot = 0;
+            var totalMatzot = 0;
+            var isStarted = false;
+            var controlsMb = false;
+            var isDone = false;
+            var timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            var totalNights = timezone=='Asia/Jerusalem'?8:9;
+
+            function resize(mobile){
+                console.log("BEGIN RESIZE FUNCTION: MOBILE="+mobile);
+                var availW = innerWidth-100;
+                var availH = innerHeight-100;
+                console.log("AVAILW="+availW);
+                console.log("AVAILH="+availH);
+                if (mobile){
+                    availH*=(4/5);
+                    var left = document.getElementById("mobileLeft");
+                    var space = document.getElementById("mobileSpace");
+                    var right = document.getElementById("mobileRight");
+                    var h = availH/4;
+                    var w = availW/3;
+                    left.style.height = Math.min(h,w)+"px";
+                    space.style.height = Math.min(h,w)+"px";
+                    right.style.height = Math.min(h,w)+"px";
+                }
+                
+                var canvasW = canvas.width;
+                var canvasH = canvas.height;
+
+                var aocW = availW/canvasW;
+                var aocH = availH/canvasH;
+
+                var ratio = Math.min(aocW,aocH);
+                canvas.style.width = canvasW*ratio+"px";
+            }
+
+            function mobileButtons(button,down){
+                if (down){
+                    if (button==0){
+                        if (!keysDown.includes("LEFT")){
+                            keysDown=[];
+                            keysDown.push("LEFT");
+                            frgoDir = 1;
+                            console.log(keysDown)
+                        }
+                    }
+                    if (button==2){
+                        if (!keysDown.includes("RIGHT")){
+                            keysDown=[];
+                            keysDown.push("RIGHT");
+                            frgoDir = -1;
+                        }
+                    }
+                    if (button==1){
+                        if (isStarted){
+                            shoot();
+                        }
+                        else{
+                            start();
+                        }
+                        if (isDone){
+                            window.location.reload();
+                        }
+                    }
+                }
+                else{
+                    if (button==0){
+                        if (keysDown.includes("LEFT")){
+                            keysDown.splice(keysDown.indexOf("LEFT"));
+                        }
+                    }
+                    if (button==2){
+                        if (keysDown.includes("RIGHT")){
+                            keysDown.splice(keysDown.indexOf("RIGHT"));
+                        }
+                    }
+                }
+            }
+
+            document.body.ontouchstart = function(){
+                //open mobile controls
+                var controls = document.getElementById("mobileControls");
+                controls.style.display = "block";
+                resize(true);
+                controlsMb = true;
+            }
+
+            function loop(){
+                resize(controlsMb);
+                bg();
+                drawLives();
+                moveFrgo();
+                //createFoods()
+                moveFoods();
+                moveLasers()
+                checkFoodstuffs();
+                checkFoodstuffsWithBullets();
+                
+
+                drawfrgo();
+                drawFoodstuffs();
+                drawLaser();
+                
+                damageOverlay();
+                drawTime();
+
+                died();
+                checkIfFrgoWins();
+
+                doDaylightCycle();
+            }
+
+            function checkIfFrgoWins(){
+                if (nightNum>=totalNights){
+                    clearInterval(interval);
+                    var table = document.getElementById("ristorante");
+                    context.drawImage(table,0,0,canvas.width,canvas.height);
+                    var frgo = document.getElementById("frgo");
+                    context.drawImage(frgo,1920-900,1080-700,800,600)
+                    var gbread = document.getElementById("gbreadflies");
+                    context.drawImage(gbread,1920-900,1080-575,400,300);
+                    context.font = "72px Arial, sans-serif";
+                    context.textAlign = "left";
+                    context.fillStyle = "white";
+                    context.fillText("You Passed! (over)",100,100);
+                    context.strokeStyle = "black";
+                    context.strokeText("You Passed! (over)", 100,100);
+                    isDone = true;
+                }
+            }
+
+            function drawTime(){
+                var time = matzot+6;
+                //0-23 but backwards
+                
+                if (time%24>=12){
+                    m="am"
+                }
+                else{
+                    m="pm"
+                }
+                time%=12;//equal to time = time%12
+                if (time==0)time=12;
+
+
+
+                var daynum = Math.floor((totalMatzot-6)/24)
+
+                var dateString = "April "+(daynum+6)+", 2023";
+                var daysleft = totalNights-nightNum;
+
+                context.fillStyle = "black";
+                context.strokeStyle = "white"
+                context.font = "36px Arial, sans-serif";
+                context.textAlign="left";
+                context.fillText(time+":00 "+m+"; "+dateString+"; "+daysleft+" days left",8,36);
+                context.strokeText(time+":00 "+m+"; "+dateString+"; "+daysleft+" days left",8,36);
+
+            }
+
+            function doDaylightCycle(){
+                if (matzot==12){
+                    console.log("newday");
+                    isday=true;
+                }
+                if (matzot>=24){
+                    console.log("Nighttime");
+                    isday = false;
+                    nightNum++;
+                    matzot=0;
+                }
+
+            }
+
+            function damageOverlay(){
+                console.log("hello")
+                context.globalAlpha = damage/40;
+                var grad = context.createRadialGradient(canvas.width/2,canvas.height/2,canvas.height/2,canvas.width/2,canvas.height/2,canvas.width/2);
+                grad.addColorStop(0,"rgba(0,0,0,0)");
+                grad.addColorStop(1,"red");
+                context.fillStyle = grad;
+                context.fillRect(0,0,canvas.width,canvas.height);
+                context.globalAlpha = 1;
+                if (damage>0){
+                    damage--;
+                }
+            }
+
+            function died(){
+                if (lives<=0){
+                    clearInterval(interval);
+                    context.fillStyle = "black";
+                    context.fillRect(0,0,canvas.width,canvas.height);
+                    context.font = "72px Arial, sans-serif";
+                    context.fillStyle = "white";
+                    context.textAlign = "center";
+                    context.fillText("YOU LOSE",canvas.width/2,350);
+                    context.font = "36px Arial, sans-serif";
+                    context.fillText("Next year, you can try again. In Jerusalem!",canvas.width/2,500);
+                    var frgo = document.getElementById("frgo");
+                    context.drawImage(frgo,(canvas.width/2)-200,700,400,300);
+                    isDone = true;
+
+                }
+            }
+
+            function checkFoodstuffs(){
+                for (i=foodstuffs.length-1;i>=0;i--){
+                    var food = foodstuffs[i];
+                    if (food["y"]>=canvas.height-175){
+                        if (food["chametz"]){
+                            lives-=10;
+                            damage = 10;
+                        }
+                        else{
+                            lives++;
+                            matzot++;
+                            totalMatzot++;
+                        }
+                        foodstuffs.splice(i,1);
+                    }
+                }
+            }
+
+
+            function checkFoodstuffsWithBullets(){
+                for (i=foodstuffs.length-1;i>=0;i--){
+                    var food = foodstuffs[i];
+                    var x = food["x"];
+                    var y = food["y"];
+                    var width=100;
+                    var box = {"x1":x-(width/2),"x2":x+(width/2),"y1":y-(width/2),"y2":y+(width/2)};
+
+                    var isHittingbox = checkBoxWithLasers(box);
+
+                    if (isHittingbox){
+                        if (!food["chametz"]){
+                            lives-=5
+                            damage = 10;
+                        }
+                        else{
+                            lives+=3;
+                            if (lives>100){
+                                lives=100;
+                            }
+                        }
+                        foodstuffs.splice(i,1);
+                        
+                    }
+
+                }
+            }
+
+            function checkBoxWithLasers(boxA){
+                for (w = 0; w<lasers.length;w++){
+                    var laser = lasers[w];
+                    var laserX = laser["x"];
+                    var laserY = laser["y"];
+                    var width = 20;
+                    var height = 100
+                    var laserBox = {"x1":laserX-(width/2),"x2":laserX+(width/2),"y1":laserY-(height/2),"y2":laserY+(height/2)};
+                    var didYOUFAIL = checkBoxWithBox(boxA,laserBox);
+                    if (didYOUFAIL==true){
+                        return true;
+                    }
+                }
+            }
+
+            function checkBoxWithBox(boxA,boxB){
+                var x1 = boxA["x1"];
+                var x2 = boxA["x2"];
+                var y2 = boxA["y2"];
+                var y1 = boxA["y1"];
+
+                var x1_2 = boxB["x1"];
+                var x2_2 = boxB["x2"];
+                var y2_2 = boxB["y2"];
+                var y1_2 = boxB["y1"];
+
+                var points = [[x1_2,y1_2],[x1_2,y2_2],[x2_2,y1_2],[x2_2,y2_2]];
+
+                for (qwss = 0; qwss<points.length;qwss++){
+                    var point = points[qwss];
+                    if (point[0]<=x2&&point[0]>=x1){
+                        if (point[1]<=y2&&point[1]>=y1){
+                            return true;
+                        }
+                    }
+                }
+            }
+
+            function moveLasers(){
+                for (i=0;i<lasers.length;i++){
+                    lasers[i]["y"]-=30;
+                }
+            }
+
+            function drawLaser(){
+                for (i=0;i<lasers.length;i++){
+                    var laser = lasers[i];
+                    var x = laser["x"];
+                    var y = laser["y"];
+                    context.fillStyle = "red";
+                    context.fillRect(x-10,y-50,20,100);
+                }
+            }
+
+            function moveFoods(){
+                for (i=0;i<foodstuffs.length;i++){
+                    var fooditem = foodstuffs[i];
+                    foodstuffs[i]["y"]=fooditem["y"]+10;
+                }
+            }
+
+            function drawFoodstuffs(){
+                for (i=0;i<foodstuffs.length;i++){
+                    var fooditem = foodstuffs[i];
+                    var y = fooditem["y"];
+                    var x = fooditem["x"];
+                    var width = 100;
+                    context.drawImage(fooditem["foodType"],x-(width/2),y-(width/2),width,width);
+                }
+            }
+
+            function createFoods(){
+                if (Math.floor(Math.random()*100)==1){
+                    score++;
+                    createFoodstuff();
+                }
+            }
+
+
+            function createFoodstuff(){
+                var ischametz = Math.random()>.5?true:false;
+                var chametzes = [document.getElementById("cake"),document.getElementById("bread"),document.getElementById("gbread")];
+                var koshers = [document.getElementById("matzo")];
+                var foodItem = ischametz?chametzes[Math.floor(Math.random()*chametzes.length)]:koshers[Math.floor(Math.random()*koshers.length)];
+                var foodStuff = {"chametz":ischametz,"x":100+(Math.random()*(1920-200)),"y":0,"foodType":foodItem};
+                foodstuffs.push(foodStuff);
+            }
+
+            function drawLives(){
+                context.fillStyle = "black";
+                context.fillRect(1920-(200+(66/4)),66/4,200,66);
+                //120 is green; 0 is red; 
+                var h = 1.2*lives
+                context.fillStyle = "hsl("+h+" 100% 50%)";
+                context.fillRect(1920-(200+(66/4)),66/4,lives*2,66);
+            }
+
+            function drawfrgo(){
+                var size = 300;
+                var h = (size/400)*300;
+                var y = 1080-175 - (h/2);
+                var frgo = document.getElementById("frgo")
+                context.save();
+                context.translate(frgoX,0);
+                if (frgoDir==-1){
+                    size*=-1;
+                    context.scale(-1,1);
+                }
+                context.drawImage(frgo,-size/2,y,size,h);
+
+
+                context.restore();
+
+                /*context.fillStyle = "red";
+                context.fillRect(x-(size/2),y,size,h)*/
+            }
+
+            function bg(){
+                context.fillStyle = "cyan";
+                if (!isday){
+                    context.fillStyle = "black";
+                }
+                context.fillRect(0,0,canvas.width,canvas.height);
+                context.fillStyle = "green";
+                context.fillRect(0,880,canvas.width,200);
+            }
+
+            function moveFrgo(){
+                if (keysDown.includes("LEFT")&&frgoX>0){
+                    frgoX-=frgoSpeed;
+                }
+                if (keysDown.includes("RIGHT")&&frgoX<canvas.width){
+                    frgoX+=frgoSpeed;
+                }
+            }
+
+            function shoot(){
+                //shoot laser at chametz
+                var laser = {"x":frgoX,"y":canvas.height-175};
+                lives--;
+                lasers.push(laser);
+            }
+
+            document.addEventListener("keydown",(e)=>{
+                console.log("KEYDOWN:"+e.code)
+                if (e.code=="KeyF"){
+                    canvas.requestFullscreen();
+                }
+                if (e.code=="KeyA"||e.code=="ArrowLeft"){
+                    if (!keysDown.includes("LEFT")){
+                        keysDown=[];
+                        keysDown.push("LEFT");
+                        frgoDir = 1;
+                        console.log(keysDown)
+                    }
+                }
+                if (e.code=="KeyD"||e.code=="ArrowRight"){
+                    if (!keysDown.includes("RIGHT")){
+                        keysDown=[];
+                        keysDown.push("RIGHT");
+                        frgoDir = -1;
+                    }
+                }
+                if (e.code=="Space"){
+                    if (isStarted){
+                        if (e.repeat==false){
+                            shoot();
+                        }
+                    }
+                    else{
+                        start();
+                    }
+                    if (isDone){
+                            window.location.reload();
+                    }
+                }
+            });
+
+            document.addEventListener("keyup",(e)=>{
+                console.log("KEYUP:"+e.code)
+                if (e.code=="KeyA"||e.code=="ArrowLeft"){
+                    if (keysDown.includes("LEFT")){
+                        keysDown.splice(keysDown.indexOf("LEFT"));
+                    }
+                }
+                if (e.code=="KeyD"||e.code=="ArrowRight"){
+                    if (keysDown.includes("RIGHT")){
+                        keysDown.splice(keysDown.indexOf("RIGHT"));
+                    }
+                }
+            })
+
+            var interval;
+            function init(){
+                resize(false);
+                var matzahBackground = document.getElementById("mback");
+                if (matzahBackground.complete && matzahBackground.naturalHeight !=0){
+                    drawIntro();
+                }
+                else{
+                    matzahBackground.onload = drawIntro;
+                }
+            }
+
+
+            function drawIntro(){
+                context.font = "96px 'IBM Plex Sans Hebrew', sans-serif";
+                var text = "פְרְגוֹשֵׁר לְפֶּסַח";
+                var bg = document.getElementById("mback");
+                context.drawImage(bg,0,0,canvas.width,canvas.height);
+                context.fillStyle = "black";
+                context.textAlign = "left";
+                context.fillText(text, 50,200);
+                context.fillText("FRGOsher for Passover",50,100);
+                var frgo = document.getElementById("frgo");
+                context.drawImage(frgo,canvas.width-500,canvas.height- 500,400,300);
+                var speech = "\"Don't worry. Passover will be over before you can spell Manischewitz,\" says frgo."
+                context.font = "36px Arial, sans-serif";
+                context.textAlign = "right";
+                context.fillText(speech, canvas.width-100,canvas.height-100);
+                context.textAlign = "left";
+                context.fillText("Press 'F' to fullscreen, and 'Space' to start. Use the arrow keys to move and 'Space' to shoot.",100,canvas.height-35);
+            }
+
+            function start(){
+                isStarted = true;
+                interval = setInterval(loop,33);
+                createFoodstuff();
+                setInterval(createFoodstuff,500)
+            }
+            document.getElementById("frgo").onload = init;
+        </script>
+    </body>
+</html>

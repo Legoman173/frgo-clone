@@ -1,0 +1,100 @@
+<!doctype html>
+<html>
+    <head>
+        <title>HTML Viewer</title>
+        <style>
+            body{
+                background-color:#202020;
+            }
+            #t{
+                width:50%;
+                height:85vh;
+            }
+            button{
+                border-style:solid;
+                border-radius:0px;
+                border-color:#358cd6;
+            }
+
+            #t, button{
+                background-color:#1a1a1a;
+                font-size:16pt;
+                font-family:"consolas",monospace;
+                color:#358cd6;
+            }
+            h1{
+                font-size:24pt;
+                font-family:"consolas",monospace;
+                color:#358cd6;
+            }
+            button:hover{
+                font-size:18pt;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>HTML Editor/Viewer</h1>
+        <textarea id = "t" contenteditable="true" spellcheck="false" autocomplete="off" autocapitalize="none" placeholder = "Type code here . . ."></textarea>
+        <br>
+        <button onclick = "save()" title = "This will override your current save.">Save</button>
+        <button onclick = "run()" title = "This will open a pop-up window running your code.">Open</button>
+        <button onclick = "restore()" title = "This will restore your text box to the last saved code.">Restore</button>
+        <button onclick = "download()" title = "This will download an HTML file to your default downloads folder.">Download</button>
+        <script>
+            var textarea = document.getElementById("t");
+            var newWin;
+            function save(){
+                localStorage.setItem("html-viewer/editor-code",textarea.value);
+            }
+
+            function download() {
+                var filename = prompt("Enter a name for the file:")+".html";
+                var data = textarea.value;
+                const blob = new Blob([data], {type: 'text/html'});
+                if(window.navigator.msSaveOrOpenBlob) {
+                    window.navigator.msSaveBlob(blob, filename);
+                }
+                else{
+                    const elem = window.document.createElement('a');
+                    elem.href = window.URL.createObjectURL(blob);
+                    elem.download = filename;        
+                    document.body.appendChild(elem);
+                    elem.click();        
+                    document.body.removeChild(elem);
+                }
+            }
+
+            function run(){
+                save();
+                if (newWin){
+                    newWin.window.close();
+                }
+                newWin = window.open("","","width="+innerWidth+",height="+innerHeight+",left="+screenLeft+",top="+screenTop);
+                console.log(textarea.value)
+                newWin.window.document.documentElement.innerHTML = textarea.value;
+            }
+
+            function restore(){
+                textarea.value = localStorage.getItem("html-viewer/editor-code")||localStorage.getItem("code")||"";
+                save();
+                localStorage.removeItem("code");
+            }
+
+            restore();
+
+            textarea.addEventListener('keydown', function(e) {
+            if (e.key == 'Tab') {
+                e.preventDefault();
+                var start = this.selectionStart;
+                var end = this.selectionEnd;
+
+                // set textarea value to: text before caret + tab + text after caret
+                this.value = this.value.substring(0, start) + "     " + this.value.substring(end);
+
+                // put caret at right position again
+                this.selectionStart = this.selectionEnd = start + 5;
+            }
+        });
+        </script>
+    </body>
+</html>

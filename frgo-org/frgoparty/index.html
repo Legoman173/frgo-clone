@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Have a frgo</title>
+        <link rel = "icon" href = "frgo.jpg">
+        <script type="text/JavaScript">
+            alert("Have a frgo!")
+            function Dance(){
+                    var WidthInt = Math.floor(Math.random()*268)+400
+                    var HeightInt = Math.floor(Math.random()*150)+350
+                    document.getElementById("frgo.jpg1").width = WidthInt
+                    document.getElementById("frgo.jpg1").height = HeightInt
+            }
+
+            function Dance2(){
+                    var WidthInt2 = Math.floor(Math.random()*268)+400
+                    var HeightInt2 = Math.floor(Math.random()*150)+350
+                    document.getElementById("frgo.jpg2").width = WidthInt2
+                    document.getElementById("frgo.jpg2").height = HeightInt2
+            }
+
+            function Dance3(){
+                    var WidthInt3 = Math.floor(Math.random()*268)+400
+                    var HeightInt3 = Math.floor(Math.random()*150)+350
+                    document.getElementById("frgo.jpg3").width = WidthInt3
+                    document.getElementById("frgo.jpg3").height = HeightInt3
+            }
+
+            function Dance4(){
+                    var WidthInt4 = Math.floor(Math.random()*268)+400
+                    var HeightInt4 = Math.floor(Math.random()*150)+350
+                    document.getElementById("frgo.jpg4").width = WidthInt4
+                    document.getElementById("frgo.jpg4").height = HeightInt4
+            }
+        </script>
+    </head>
+    <body id="body">
+        <img id = "frgo.jpg1" src="./frgo.jpg" alt="frgo.jpg" height="500px" width = "667px">
+        <img id = "frgo.jpg2" src="./frgo.jpg" alt="frgo.jpg" height="500px" width = "667px">
+        <br>
+        <img id = "frgo.jpg3" src="./frgo.jpg" alt="frgo.jpg" height="500px" width = "667px">
+        <img id = "frgo.jpg4" src="./frgo.jpg" alt="frgo.jpg" height="500px" width = "667px">
+        <script>
+            window.setInterval(Dance, 50)
+            window.setInterval(Dance2, 50)
+            window.setInterval(Dance3, 50)
+            window.setInterval(Dance4, 50)
+
+            var secretString = ["KeyL","KeyE","KeyG","KeyO"];
+            var index = 0;
+
+            document.body.addEventListener("keydown",(e)=>{
+                if (e.code==secretString[index]){
+                    index++;
+                    if (index==4){
+                        for (i=0;i<4;i++){
+                            var obj = document.getElementById("frgo.jpg"+(i+1));
+                            obj.src = "./lego_frgo.png";
+                        }
+                        secretString = "Nothing to see here..."
+                        index = null
+                        document.body.removeEventListener("keydown");
+                    }
+                }
+                else{
+                    index=0;
+                }
+            })
+        </script>
+    </body>
+</html>

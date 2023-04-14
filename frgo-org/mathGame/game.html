@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Game</title>
+        
+        <link rel = "stylesheet" type = "text/css" href = "main.css">
+        <style>
+            body{
+                text-align: center;
+                color:white;
+                background-color:#000080;
+                user-select: none;
+            }
+            #question{
+                min-width:fit-content;
+                text-align:right;
+                font-size:5em;
+                font-weight:bold;
+                font-family:'Comic Sans', sans-serif;
+                display:inline-block;
+            }
+            #sign{
+                min-width:fit-content;
+                text-align:right;
+                font-weight:bold;
+                font-size:5em;
+                font-family:'Comic Sans', sans-serif;
+                display:inline-block;
+            }
+
+            p{
+                padding:0 0 0 0;
+                margin:0 0 0 0;
+            }
+
+            hr{
+                border-top:.2em solid;
+                margin:0;
+
+            }
+            #parent{
+                text-align:center;
+                display:inline-block;
+            }
+
+            #sign hr{
+                border-color: #00000000
+            }
+            .invisible{
+                color:#00000000
+            }
+            #label{
+                position:absolute;
+                top:0;
+                left:0;
+                font-family:"Comic Sans", sans-serif;
+                font-size:2em;
+            }
+            #score{
+                position:absolute;
+                bottom:0;
+                left:5px;
+                text-align:left;
+                font-family:"Comic Sans", sans-serif;
+                font-size:3em;
+            }
+            #time{
+                position:absolute;
+                top:0;
+                right:5px;
+                text-align:right;
+                font-family:"Comic Sans", sans-serif;
+                font-size:3em;
+            }
+        </style>
+    </head>
+    <body>
+        <p id = "label"></p>
+        <p id = "score"></p>
+        <p id = "time"></p>
+        <div  id = "parent">
+        <div id = "sign">
+            <br>
+        <p id = "op">X</p>
+        <hr>
+        <br>
+        </div>
+        <div id = "question">
+            <p id = "t1">Term 1</p>
+            <p id = "t2">Term 2</p>
+            <hr>
+            <p id = "ans">ans</p>
+        </div>
+        </div>
+
+        <script>
+            var params = window.location.href.split("?")[1]
+            var qString = new URLSearchParams(params);
+            var questionSet;
+            var difficulty;
+            var currentQuestion;
+            var currentResponse ="";
+            var pts = 0;
+            var locked = false;
+            var startTime;
+            var interval;
+
+            for(let pair of qString.entries()) {
+                if (pair[0] == "q"){
+                    questionSet = JSON.parse(pair[1]);
+                }
+                if (pair[0] == "d"){    
+                    difficulty = JSON.parse(pair[1]);
+                }
+            }
+
+            if (questionSet == null || difficulty == null || questionSet.length == 0){window.close()}else{start()}
+
+            document.onkeydown = function(e){
+                var e = e || window.event //for old people who still use internet explorer 
+                console.log(e.keyCode)//0=48 enter = 13
+                key = e.keyCode;
+                if (locked == false){
+                    if (key >= 96 && key <= 105){
+                        key -= 48
+                    }
+                    if (key == 13){
+                        keyStroke("enter")
+                    }
+                    else if (key == 8){
+                        keyStroke("backspace")
+                    }
+                    else if (key!=48&&key!=49){
+                        var c = currentQuestion[3]
+                        if (c == 0 || c == 1 || c == 2 || c == 3 || c == 4){
+                            keyStroke(key-48);
+                        }
+                    }
+                    else{
+                        keyStroke(key-48);
+                    }
+                }
+            }
+
+            function submit(){
+                var answer = parseInt(currentResponse);
+                var cA = currentQuestion[2];
+                console.log("SUBMIT:"+cA+","+answer)
+                if (answer == cA){
+                    //Correct!
+                    next(true,cA);
+                }
+                else{
+                    //incorrect (:
+                    next(false,cA)
+                }
+            }
+
+            function next(isCorrect,cA){
+                var answer = document.getElementById("ans");
+                if (isCorrect){
+                    //document.body.style.backgroundColor = "#00ff00";
+                    answer.style.color = "#00ff00";
+                    pts+=2;
+                }
+                else{
+                    //document.body.style.backgroundColor = "#ff0000";
+                    answer.innerHTML = cA;
+                    answer.style.color = "#ff0000";
+                    pts--;
+                }
+                locked = true;
+                setTimeout(
+                    function(){
+                        locked = false;
+                        var answer = document.getElementById("ans");
+                        document.body.style.backgroundColor = "#000080";
+                        answer.style.color = "#ffffff";
+                        var q = makeProblem(questionSet[Math.floor(Math.random()*questionSet.length)],difficulty);
+                        console.log(q);
+                        currentQuestion = q;
+                        displayQuestion();
+                    },
+                    1000
+                )
+            }
+
+            function keyStroke(key){
+                console.log(key)
+                if (key == "enter"){
+                    submit()
+                }
+                else if (key == "backspace"){
+                    var string = document.getElementById("ans").innerHTML
+                    if (string.length >= "<span class = 'invisible'>J</span>".length-1){
+                        document.getElementById("ans").innerHTML = string.substring(0,string.length-1);
+                        currentResponse = currentResponse.substring(0,currentResponse.length-1);
+                    }
+                }
+                else{
+                    if (key >= 0 && key < 10)
+                    document.getElementById("ans").innerHTML += key.toString();
+                    currentResponse += key.toString();
+                }
+                
+            }
+
+            function start(){
+                var q = makeProblem(questionSet[Math.floor(Math.random()*questionSet.length)],difficulty);
+                console.log(q);
+                currentQuestion = q;
+                displayQuestion();
+                startTime = Date.now();
+                interval = setInterval(timer,40)
+            } 
+
+            function timer(){
+                var now = Date.now();
+                var passed = now - startTime;
+                var timeToStart = 90000;
+                var timeLeft = timeToStart - passed;
+                if (timeLeft > 0){
+                    var displayTime = addSigFig(timeLeft/1000,2);
+                    var time = document.getElementById("time").innerHTML = displayTime;
+                    console.log(displayTime.length)
+                }
+                else{
+                    clearInterval(interval);//kill program
+                    end()
+                }
+            }
+
+            function end(){
+                locked = true;
+                var form = document.createElement("form");
+                form.method = "post";
+                form.action = "score.php"
+                var score = document.createElement("input");
+                score.name = "score";
+                score.setAttribute("value",JSON.stringify(pts))
+                form.appendChild(score);
+                var probs = document.createElement("input");
+                probs.name = "problems";
+                probs.setAttribute("value",JSON.stringify(questionSet));
+                form.appendChild(probs);
+                var diff = document.createElement("input");
+                diff.name = "difficulty";
+                diff.setAttribute("value",JSON.stringify(difficulty));
+                form.appendChild(diff);
+                document.body.appendChild(form);
+                form.submit();
+            }
+
+            function addSigFig(num,figures){
+                var ending = num - Math.floor(num);//get ending decimal places
+                var whole = Math.floor(ending*(10**figures))//multiply by figure num and cut off excess. If no excess, adds. (:
+                var endString = whole.toString()//convert to string
+                if (endString.length == 1){
+                    endString = "0"+endString;
+                }
+                var ogString = Math.floor(num).toString();
+
+                var finalString = ogString+"."+endString;
+                return finalString;
+            }
+
+            function displayQuestion(){
+                var question = currentQuestion;
+                console.log(question)
+                var t1 = document.getElementById("t1");
+                var t2 = document.getElementById("t2");
+                var op = document.getElementById("op");
+                
+
+                var label = document.getElementById("label");
+                document.getElementById("score").innerHTML = pts;
+                
+                document.getElementById("ans").innerHTML = "<span class = 'invisible'>J</span>"
+                currentResponse ="";
+                if (question[1]=="CONVERSION"||question[3]==4||question[3]==5){
+                    t1.innerHTML = question[4]
+                    op.innerHTML = "";
+                    t2.innerHTML = question[0];
+                    var end = question[3]==4?"Binary to Decimal":"Decimal to Binary";
+                    label.innerHTML = "Binary Conversion: "+ end;
+                }
+                else{
+                    t1.innerHTML = question[0];
+                    t2.innerHTML = question[1];
+                    op.innerHTML = question[4];
+                    console.log("question[3]:"+question[3]);
+                    if (question[3]<4){
+                        var end = question[3]==0?"Addition":question[3]==1?"Subtraction":question[3]==2?"Multiplication":"Division";
+                        label.innerHTML = "Basic Operation: "+ end;
+                    }
+                    else{
+                        var end = question[3]==6?"Addition":question[3]==7?"Subtraction":question[3]==8?"Multiplication":"Division";
+                        label.innerHTML = "Binary Operation: "+ end;
+                    }
+                }
+            }
+
+            function makeProblem(type,difficulty){
+                var returnArray = [];
+                if (type <= 3){
+                    //0,1,2,3; Basic Operations
+                    var range1 = difficulty == 1?[1,12]:[12,99];
+                    var range2 = difficulty != 3?[1,12]:[12,99];
+
+                    var val1 = random(range1);
+                    var val2 = random(range2);
+
+                    if (type == 0){
+                        var term1 = Math.max(val1,val2);
+                        var term2 = Math.min(val1,val2);
+
+                        var answer = term1+term2;
+
+                        returnArray = [term1,term2,answer];
+                    }
+                    if (type == 1){
+                        var term1 = Math.max(val1,val2);
+                        var term2 = Math.min(val1,val2);
+
+                        var answer = term1-term2;
+
+                        returnArray = [term1,term2,answer];
+                    }
+                    if (type == 2){
+                        var term1 = Math.max(val1,val2);
+                        var term2 = Math.min(val1,val2);
+
+                        var answer = term1*term2;
+
+                        returnArray = [term1,term2,answer];
+                    }
+                    if (type == 3){
+                        var randNum = random([0,1]);
+                        var term2 = [val1,val2][randNum];
+                        var answer = [val2,val1][randNum];
+
+                        var term1 = val1*val2;
+
+                        returnArray = [term1,term2,answer];
+                    }
+                }
+                else if (type <= 5){
+                    //4,5; Binary Conversions
+                    var range = difficulty == 1?[1,17]:difficulty == 2?[1,31]:[1,63];
+                    var val = random(range);
+                    if (type == 4){
+                        var term = toBin(val);
+                        var answer = val;
+                        returnArray = [term,"CONVERSION",answer];
+                    }
+                    else{
+                        var term = val;
+                        var answer = toBin(val);
+                        returnArray = [term,"CONVERSION",answer];
+                    }
+                }
+                else{
+                    //Binary Operations
+                    var range1 = difficulty == 1?[1,17]:[1,31];
+                    var range2 = difficulty != 3?[1,17]:[1,31];
+
+                    var val1 = random(range1);
+                    var val2 = random(range2);
+
+                    if (type == 6){
+                        var term1 = Math.max(val1,val2);
+                        var term2 = Math.min(val1,val2);
+
+                        var answer = term1+term2;
+
+                        returnArray = [toBin(term1),toBin(term2),toBin(answer)];
+                    }
+                    if (type == 7){
+                        var term1 = Math.max(val1,val2);
+                        var term2 = Math.min(val1,val2);
+
+                        var answer = term1-term2;
+
+                        returnArray = [toBin(term1),toBin(term2),toBin(answer)];
+                    }
+                    if (type == 8){
+                        var term1 = Math.max(val1,val2);
+                        var term2 = Math.min(val1,val2);
+
+                        var answer = term1*term2;
+
+                        returnArray = [toBin(term1),toBin(term2),toBin(answer)];
+                    }
+                    if (type == 9){
+                        var randNum = random([0,1]);
+                        var term2 = [val1,val2][randNum];
+                        var answer = [val2,val1][randNum];
+
+                        var term1 = val1*val2;
+
+                        returnArray = [toBin(term1),toBin(term2),toBin(answer)];
+                    }
+                }
+
+                var ops = ["+","-",String.fromCharCode(215),String.fromCharCode(247),"to decimal","to binary","+","-",String.fromCharCode(215),String.fromCharCode(247)];
+                returnArray.push(type);
+                returnArray.push(ops[type]);
+                return returnArray;
+            }
+
+            function toBin(num){
+                //return: STRING
+                return num.toString(2);
+            }
+            function toDecimal(binaryString){
+                //return: INT
+                return parseInt(binaryString,2);
+            }
+            function random(range){
+                return Math.floor(Math.random()*((range[1]-range[0])+1))+range[0];
+            }
+        </script>
+    </body>
+</html>

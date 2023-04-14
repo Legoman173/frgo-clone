@@ -1,0 +1,422 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <title>FRGODLE</title>
+    <script src="info.js"></script>
+    <style>
+        body{
+            background-color: palegreen;
+        }
+        #grid{
+            display: grid;
+            grid-template-columns: 20% 20% 20% 20% 20%;
+            position: absolute;
+            width: 400px;
+            left: 50%;
+            top: 13%;
+            transform: translateX(-50%);
+        }
+        .box{
+            position: relative;
+            margin: 3px;
+            border: solid 3px black; 
+        }
+        .box:after{
+            content:"";
+            display:block;
+            padding-bottom:100%;
+        }
+        .content{
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            margin: auto;
+            position: absolute;
+            user-select:none;
+            color:black;
+            font-family: Arial, Helvetica, sans-serif;
+            font-weight:bold;
+            font-size:60px;
+            text-align: center;
+        }
+        .key{
+            position: relative;
+            margin: 1px;
+            cursor:pointer;
+            background-color:seagreen;
+            border: solid 2px seagreen;
+            border-radius: 10px;
+            height:100%;
+        }
+        #keyboard{
+            display:grid;
+            grid-template-rows:33% 33% 33%;
+            bottom:5%;
+            width: 600px;
+            height: 240px;
+            left:50%;
+            transform: translateX(-50%);
+            position:absolute;
+        }
+        #row1{
+            display:grid;
+            grid-template-columns: 10% 10% 10% 10% 10% 10% 10% 10% 10% 10%;
+            position:relative;
+            margin:3px;
+        }
+        #row2{
+            display:grid;
+            grid-template-columns: 10% 10% 10% 10% 10% 10% 10% 10% 10%;
+            position:relative;
+            left:5%;
+            right:5%;
+            margin:3px;
+        }
+        #row3{
+            display:grid;
+            grid-template-columns: 15% 10% 10% 10% 10% 10% 10% 10% 15%;
+            position:relative;
+            margin:3px;
+        }
+        .button{
+            border: solid 2px gray;
+            position: relative;
+            float:right;
+            text-align: center;
+            font-family: Arial, Helvetica, sans-serif;
+            background-color: lightgray;
+            height: 17px;
+            width: 17px;
+            cursor:pointer;
+            user-select:none;
+            margin: 13px;
+        }
+        #share{
+            border: solid 2px gray;
+            position:relative;
+            bottom: 0px;
+            text-align: center;
+            font-family: Arial, Helvetica, sans-serif;
+            font-weight:bold;
+            font-size:22px;
+            user-select:none;
+            background-color: lightgray;
+            height: 60px;
+            width: 250px;
+            display: inline-block;
+            cursor:pointer;
+            margin: 20px;
+        }
+        .keyLetter{
+            position: absolute;
+            user-select:none;
+            color:white;
+            font-family: Arial, Helvetica, sans-serif;
+            font-weight:bold;
+            font-size:24px;
+            left:50%;
+            transform: translateX(-50%);
+        }
+        h1{
+            user-select:none;
+            text-align: center;
+            font-family: Arial, Helvetica, sans-serif;
+            font-weight:bold;
+            font-size:50px;
+        }
+        .error{
+            user-select:none;
+            position:absolute;
+            text-align: center;
+            font-family: Arial, Helvetica, sans-serif;
+            font-weight:bold;
+            color:transparent;
+            font-size:35px;
+            top:60%;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        .popup {
+            display: none;
+            position: fixed;
+            bottom: 0;
+            right: 15px;
+            z-index: 9;
+        }
+        .popup-container {
+            background-color:#181818;
+            border: solid 2px #181818;
+            border-radius: 25px;
+            position: fixed;
+            width: 300px;
+            max-height: 400px;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            left: 50%;
+            z-index: 10;
+            text-align: center;
+        }
+        p{
+            color:gainsboro;
+            font-family: Arial, Helvetica, sans-serif;
+            text-align: center;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>FRGODLE</h1>
+    <div id = "grid">
+    </div>
+    <h3 id = "invalid" class = "error">WORD NOT IN WORD LIST</h3>
+    <h3 id = "short" class = "error">WORD MUST BE 5 LETTERS</h3>
+    <div id = "keyboard">
+        <div id = "row1">
+        </div>
+        <div id = "row2">
+        </div>
+        <div id = "row3">
+        </div>
+    </div>
+    <div class = "popup" id = "popup">
+        <form class = "popup-container" id = "container">
+        </form>
+    </div>
+
+    <script>
+        console.log(answer);
+        let words = [[]];
+        let typable = true;
+        let currentWord = 1;
+        let letterColors = [];
+        function setupGame(){
+            for(let i = 0; i < 30; i++){
+                var box = document.createElement("div");
+                box.setAttribute("class","box");
+                box.setAttribute("id","box"+Math.floor(i/5+1)+(i%5+1));
+                document.getElementById("grid").appendChild(box);
+                var content = document.createElement("p");
+                content.setAttribute("class","content");
+                content.setAttribute("id","content"+Math.floor(i/5)+(i%5+1));
+                box.appendChild(content);
+            }
+            for(let i = 0; i < 28; i++){
+                var key = document.createElement("div");
+                key.setAttribute("class","key");
+                key.setAttribute("id",getKeyboardSymbol(i)+"key");
+                if(i < 10) document.getElementById("row1").appendChild(key);
+                else if(i < 19) document.getElementById("row2").appendChild(key);
+                else document.getElementById("row3").appendChild(key);
+                var content = document.createElement("p");
+                content.setAttribute("class","keyLetter");
+                content.setAttribute("id",getKeyboardSymbol(i));
+                key.appendChild(content);
+                content.innerHTML = getKeyboardSymbol(i).toUpperCase();
+                key.addEventListener('click', function(){
+                    type(document.getElementById(getKeyboardSymbol(i)+"key").textContent);
+                });
+            }
+            for(let i = 0; i < 26; i++){
+                letterColors.push(0);
+            }
+        }
+
+        document.addEventListener('keydown', function(event) {
+            if(event.keyCode >= 65 && event.keyCode <= 90) type(String.fromCharCode(event.keyCode));
+            if(event.keyCode == 13) type("ENTER");
+            if(event.keyCode == 8) type("\u232b");
+        });
+
+        function getKeyboardSymbol(i){
+            switch(i){
+                case 0: return "q";
+                case 1: return "w";
+                case 2: return "e";
+                case 3: return "r";
+                case 4: return "t";
+                case 5: return "y";
+                case 6: return "u";
+                case 7: return "i";
+                case 8: return "o";
+                case 9: return "p";
+                case 10: return "a";
+                case 11: return "s";
+                case 12: return "d";
+                case 13: return "f";
+                case 14: return "g";
+                case 15: return "h";
+                case 16: return "j";
+                case 17: return "k";
+                case 18: return "l";
+                case 19: return "enter";
+                case 20: return "z";
+                case 21: return "x";
+                case 22: return "c";
+                case 23: return "v";
+                case 24: return "b";
+                case 25: return "n";
+                case 26: return "m";
+                case 27: return "\u232b";
+            }
+        }
+
+        function type(i){
+            w = currentWord-1
+            if(i.match(/[a-z]/i)&&i.length==1&&typable){
+                if(words[w].length < 5){
+                    words[w].push(i);
+                    document.getElementById("content"+w+words[w].length).innerHTML = i;
+                }
+            }else if(i == "\u232b" && document.getElementById("popup").style.display == ""){
+                if(words[w].length > 0){
+                    words[w].pop();
+                    document.getElementById("content"+w+(words[w].length+1)).innerHTML = "";
+                }
+            }else if(i == "ENTER" && document.getElementById("popup").style.display != "block"){
+                if(words[w].length == 5 && inWordList()){
+                    if(!checkWord()){
+                        words.push([]);
+                        currentWord++;
+                    }
+                }else if(words[w].length < 5) tooShortMessage();
+            }
+        }
+
+        function inWordList(){
+            word = "";
+            for(let i = 0; i < 5; i++) word += words[currentWord-1][i].toLowerCase();
+            for(let i = 0; i < wordList.length; i++) if(word == wordList[i]) return true;
+            invalidWordMessage();
+            return false;
+        }
+
+        function tooShortMessage(){
+            document.getElementById("invalid").style.color = "transparent";
+            document.getElementById("short").style.color = "darkred";
+            setTimeout("document.getElementById(\"short\").style.color = \"transparent\";",2000);
+        }
+
+        function invalidWordMessage(){
+            document.getElementById("short").style.color = "transparent";
+            document.getElementById("invalid").style.color = "darkred";
+            setTimeout("document.getElementById(\"invalid\").style.color = \"transparent\";",2000);
+        }
+
+        function checkWord(){
+            document.getElementById("short").style.color = "transparent";
+            document.getElementById("invalid").style.color = "transparent";
+            for(let i = 0; i < 5; i++){
+                letter = words[currentWord-1][i];
+                box = document.getElementById("box"+(currentWord)+(i+1));
+                if(!answer.includes(letter)){
+                    box.style.backgroundColor = "gray";
+                    box.style.borderColor = "gray";
+                    updateColors(letter,1);
+                }else if(letter == answer.charAt(i)){
+                    box.style.backgroundColor = "#588c4c";
+                    box.style.borderColor = "#588c4c";
+                    updateColors(letter,3);
+                }else{
+                    var past = 0;
+                    var total = 0;
+                    for(let p = 0; p < i; p++) if(letter == words[currentWord-1][p] && letter != answer.charAt(p)) past++;
+                    for(let q = 0; q < 5; q++) if(letter == answer.charAt(q) && letter != words[currentWord-1][q]) total++;
+                    if(total > past){
+                        box.style.backgroundColor = "#b89c3c";
+                        box.style.borderColor = "#b89c3c";
+                        updateColors(letter,2);
+                    }else{
+                        box.style.backgroundColor = "gray";
+                        box.style.borderColor = "gray";
+                        updateColors(letter,1);
+                    }
+                }
+            }
+            word = "";
+            for(let i = 0; i < 5; i++) word += words[currentWord-1][i];
+            if(word == answer){
+                win();
+                return true;
+            }
+            if(currentWord == 6){
+                currentWord++;
+                win();
+                return true;
+            }
+            return false;
+        }
+
+        function updateColors(letter,color){
+            i = letter.charCodeAt(0)-65;
+            box = document.getElementById(String.fromCharCode(i+97)+"key");
+            if(color > letterColors[i]){
+                letterColors[i] = color;
+                box.style.backgroundColor = colorFromNumber(color);
+                box.style.borderColor = colorFromNumber(color);
+            }
+        }
+
+        function colorFromNumber(n){
+            switch(n){
+                case 0: return "seagreen";
+                case 1: return "gray";
+                case 2: return "#b89c3c";
+                case 3: return "#588c4c";
+            }
+        }
+
+        function win(){
+            document.getElementById("popup").style.display = "block";
+            var container = document.getElementById("container");
+            var x = document.createElement("div");
+            x.setAttribute("class","button");
+            x.setAttribute("onclick","document.getElementById(\"popup\").style.display = \"none\"");
+            x.innerHTML = "X";
+            container.appendChild(x);
+            var score = document.createElement("p");
+            if(currentWord == 1){
+                score.innerHTML = "You got the word in "+currentWord+" try!";
+            }else if(currentWord <= 6){
+                score.innerHTML = "You got the word in "+currentWord+" tries!";
+            }else{
+                score.innerHTML = "You did not guess the word";
+            }
+            container.appendChild(score);
+            var word = document.createElement("p");
+            word.innerHTML = "The word was: "+answer;
+            container.appendChild(word);
+            var share = document.createElement("div");
+            share.setAttribute("id","share");
+            share.innerHTML = "Share";
+            share.setAttribute("onclick","copy()");
+            container.appendChild(share);
+        }
+
+        function copy(){
+            var copy = "Frgodle "+tries()+"/6";
+            for(let i = 0; i < Math.min(currentWord,6); i++){
+                copy += "\n";
+                for(let j = 0; j < 5; j++){
+                    switch(document.getElementById("box"+(i+1)+(j+1)).style.backgroundColor){
+                        case "gray": copy += "⬛"; break;
+                        case "rgb(184, 156, 60)": copy += "🟨"; break;
+                        case "rgb(88, 140, 76)": copy += "🟩"; break; 
+                    }
+                }
+            }
+            navigator.clipboard.writeText(copy);
+        }
+
+        function tries(){
+            if(currentWord == 7) return "X";
+            return currentWord;
+        }
+
+
+        setupGame();
+
+    </script>
+</body>
+
+</html>

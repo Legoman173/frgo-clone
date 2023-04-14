@@ -1,0 +1,211 @@
+<!doctype html>
+<html>
+    <head>
+        <title>Frgo Catcher</title>
+        <style>
+            @font-face {
+                font-family: 'Baloo';
+                font-style: normal;
+                font-weight: 400;
+                font-display: swap;
+                src: url(https://fonts.gstatic.com/s/baloo2/v16/wXKrE3kTposypRyd51jcAA.woff2) format('woff2');
+                unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+            }
+        </style>
+    </head>
+    <body>
+        <canvas id = "canvas" width = "2000px" height = "1500px" style = "width:800px; height:600px;"></canvas>
+        <br>
+        <button onclick = "document.getElementById('canvas').requestFullscreen()">Fullscreen</button>
+        <div style = "display:none">
+            <!--Preload images-->
+            <img id = "frgo" src="frgo.png" alt = "lol u cant see this">
+            <img id = "egg" src = "egg.png" alt = "tasty">
+
+            <!--Fonts-->
+            <p style = "font-family:'Baloo'"></p>
+        </div>
+        <br>
+        <p><span>Show Hitbox:
+        <input id = "ShowHitboxes" type = "checkbox"></span></p>
+        <p><span>Color: 
+        <input id = "color" type = "color" value ="#ff0000"></span></p>
+        <button onclick = "lives = 0;">Lose</button>
+        <script>
+            var canvas = document.getElementById("canvas");
+            var context = canvas.getContext("2d");
+            var frgoX = 1000-160;
+            var frgoY = 1500-480;
+            var eggses = [];
+            var loops = 0;
+            var lives = 5;
+            var score = 0;
+            var dir;
+            var timeout;
+
+            addEventListener("keydown",(event) => {
+                    var key = event.keyCode;
+                    console.log(key)
+                    dir = key;
+                })
+
+            function frgo(x,y){
+                var img = document.getElementById("frgo");
+                if (document.getElementById("ShowHitboxes").checked == true){
+                        context.fillStyle = document.getElementById("color").value;
+                        context.fillRect(x,y,320,240);
+                    }
+                context.drawImage(img,x,y,320,240);
+            }
+
+            function background(){
+                context.fillStyle = "rgb(0,255,255)";
+                context.fillRect(0,0,canvas.width,canvas.height);
+                context.fillStyle = "rgb(0,255,0)";
+                context.fillRect(0,canvas.height-(75*4),canvas.width,75*4);
+            }
+
+            function eggs(){
+                for (i = 0; i < eggses.length; i++){
+                    var myegg = eggses[i];
+                    var xP = myegg[0];
+                    var yP = myegg[1];
+                    var rV = myegg[2];
+
+                    var img = document.getElementById("egg");
+
+                    if (document.getElementById("ShowHitboxes").checked == true){
+                        context.fillStyle = document.getElementById("color").value;
+                        context.filLRect(xP-100,yP-100,200,200);
+                    }
+                    context.save();
+                    context.transform(1,0,0,1,xP,yP);
+                    context.rotate(rV*Math.PI/180)
+                    context.drawImage(img,-100,-100,200,200);
+                    context.restore();
+
+                }
+            }
+
+            function killEggs(){
+                for (i = 0; i<eggses.length; i++){
+                    var yP = eggses[i][1];
+                    var xP = eggses[i][0];
+
+                    var Ex1 = xP - 100;
+                    var Ex2 = xP + 100;
+                    var Ey1 = yP - 100;
+                    var Ey2 = yP + 100;
+
+                    var Fx1 = frgoX;
+                    var Fx2 = frgoX + 320;
+                    var Fy1 = frgoY;
+                    var Fy2 = frgoY + 240;
+                    if ((Math.min(Fy1,Ey2) == Fy1 && Math.max(Fy2,Ey2) == Fy2) || (Math.min(Fy1,Ey1) == Fy1 && Math.max(Fy2,Ey1) == Fy2)){
+                        if ((Math.min(Fx1,Ex2) == Fx1 && Math.max(Ex2,Fx2) == Fx2) || (Math.min(Fx1,Ex1) == Fx1 && Math.max(Ex1,Fx2) == Fx2)){
+                            eggses.splice(i,1);
+                            score++;
+                            break;
+                        }
+                    }
+
+                    if (yP > 1500+100){
+                        eggses.splice(i,1)
+                        lives --;
+                    }
+                }
+
+            }
+
+            function clear(){
+                context.clearRect(0,0,canvas.width,canvas.height);
+            }
+
+            function spineggs(){
+                for (i = 0; i < eggses.length; i++){
+                    eggses[i][2]+=5;
+                    eggses[i][1] += 10*(score+1);
+                }
+            }
+
+            function newEgg(){
+                var egg = [];
+                egg.push(Math.floor(Math.random()*(2000-124))+125);
+                egg.push(125);
+                egg.push(Math.floor(Math.random()*360));
+                eggses.push(egg);
+            }
+
+            function info(){
+                context.fillStyle = "rgb(0,0,0)";
+                context.font = "64px Baloo";
+                context.fillText("Lives: "+lives,32,64);
+                context.fillText("Score: "+score,32,128);
+                context.fillText("Use arrow keys or A and D to move Frgo around, and catch the eggs!", 32,1500-64)
+            }
+
+            function end(){
+                background();
+
+                context.fillStyle = "rgb(0,0,0)";
+                context.font = "256px Baloo";
+                context.fillText("You Lose!", 491.25,256)
+                context.drawImage(document.getElementById("frgo"),1000-320,750-240,640,480);
+                context.font = "48px Baloo";
+                context.fillText("\"You scored "+score+" points,\" says Frgo.",1000,750-240);
+
+                
+                var eventList = addEventListener("keypress",(event) =>{
+                    if (event.keyCode == 32){
+                        window.location.href = window.location.href;
+                    }
+
+                })
+
+            }
+
+            function doPhysics(){
+                loops++;
+                console.log(Math.max(100-(5*score),10))
+                if (loops%(Math.max(100-(5*score),10))== 1){
+                    newEgg();
+                }
+
+                background();
+                console.log(dir)
+                if (dir == 37 || dir == 65){
+                        frgoX -= 10*(score+1);
+                    }
+                if (dir == 39 || dir == 68){
+                        frgoX += 10*(score+1);
+                }
+                frgo(frgoX,frgoY);
+                killEggs();
+                eggs();
+
+                spineggs();
+
+
+
+                info();
+                if (lives < 1){
+                    clear();
+                    end();
+                }
+                else{
+                    timeout = setTimeout("doPhysics()",50);
+                }
+            }
+
+
+            document.body.onload = function(){
+
+                
+                doPhysics();
+
+            };
+
+
+        </script>
+    </body>
+</html>

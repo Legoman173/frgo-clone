@@ -1,0 +1,210 @@
+<!doctype html>
+<html>
+    <head>
+        <title>Flappy Frgo</title>
+    </head>
+    <body>
+        <button onclick = "document.getElementById('c').requestFullscreen()">Fullscreen</button>
+        <canvas id = "c" width = "1920" height = "1080"></canvas>
+        <div style="display:block">
+            <img src = "assets/frgo.png" id = "frgo">
+            <img src = "assets/turtel.png" id = "turtel">
+        </div>
+        <script>
+            var canvas = document.getElementById("c");
+            var context = canvas.getContext("2d");
+            var p1P;
+            var p2P;
+            var p1V;
+            var p2V;
+            var p2Alive;
+            var p1Alive;
+            var pipes;
+            var interval;
+            var score;
+            var isPlaying = false;
+
+            document.onkeydown = function(e){
+                if (isPlaying==true){
+                    if (e.repeat==false){
+                        if (e.code=="ArrowUp"){
+                            p1V=18;
+                        }
+                        if (e.code=="KeyW"){
+                            p2V=18;
+                        }
+                    }
+                }
+                else{
+                    initialize();
+                }
+            }
+
+            function initialize(){
+                p1P=[(canvas.width/2)+200,canvas.height/2];
+                p2P=[(canvas.width/2)-200,canvas.height/2];
+                p1V=0;
+                p2V=0;
+                pipes=[];
+                score=0;
+                isPlaying = true;
+                p1Alive = true;
+                p2Alive = true;
+                interval = setInterval(loop,100/3);
+            }
+
+            function loop(){
+                score++;
+                movePlayersDown();
+                movePipes();
+                checkCollisions();
+                drawBackground();
+                drawPipes();
+                drawPlayers();
+                if (score%264==0){
+                    addPipe();
+                }
+            }
+
+            function movePlayersDown(){
+                p1P[1]-=p1V;
+                p2P[1]-=p2V;
+                p1V-=1;
+                p2V-=1;
+            }
+
+            function movePipes(){
+                for (i=0; i<pipes.length;i++){
+                    var pipe = pipes[i];
+                    pipes[i]["x"]=pipe["x"]-10;
+                }
+            }
+
+            function checkCollisions(){
+                var frgo = document.getElementById("frgo");
+                var turtel = document.getElementById("turtel");
+                for (i=0; i < pipes.length; i++){
+                    var pipe = pipes[i];
+                    var x1 = pipe["x"];
+                    var x2 = x1+250;
+                    var y1_1 = 0;
+                    var y1_2 = pipe["y"];
+                    var y2_1 = y1_2+400;
+                    var y2_2 = canvas.height;
+                    var box1 = {"x1":x1,"x2":x2,"y1":y1_1,"y2":y1_2};
+                    var box2 = {"x1":x1,"x2":x2,"y1":y2_1,"y2":y2_2};
+                    var frgoBox = {"x1":p1P[0]-(frgo.width/2),"x2":p1P[0]+(frgo.width/2),"y1":p1P[1]-(frgo.height/2),"y2":p1P[1]+(frgo.height/2)}
+                    var turtelBox = {"x1":p2P[0]-(turtel.width/2),"x2":p2P[0]+(turtel.width/2),"y1":p2P[1]-(turtel.height/2),"y2":p2P[1]+(turtel.height/2)}
+                    
+                    var frgo1 = checkBoxes(frgoBox,box1);
+                    var frgo2 = checkBoxes(frgoBox,box2);
+                    var turtel1 = checkBoxes(turtelBox,box1);
+                    var turtel2 = checkBoxes(turtelBox,box2);
+
+                    var frgoSuccess = frgo1==true&&frgo2==true?true:false;
+                    var turtelSuccess = turtel1==true&&turtel2==true?true:false;
+                    if (frgoSuccess!=true||turtelSuccess!=true){
+
+                        
+                    }
+                    if (frgoSuccess==false){
+                        //p1P[1]=10000;
+                        p1Alive = false;
+                    }
+                    if (turtelSuccess==false){
+                        //p2P[1]=10000;
+                        p2Alive = false;
+                    }
+                }
+
+                if (p1P[1]>canvas.height||p1P[1]<0){
+                    p1Alive=false;
+                }
+                if (p2P[1]>canvas.height||p2P[1]<0){
+                    p2Alive = false;
+                }
+            }
+
+            function checkBoxes(boxA,boxB){
+                var x1 = boxA["x1"];
+                var x2 = boxA["x2"];
+                var y1 = boxA["y1"];
+                var y2 = boxA["y2"];
+                var notTouching = true;
+                var points = [
+                    {"x":x1,"y":y1},
+                    {"x":x1,"y":y2},
+                    {"x":x2,"y":y1},
+                    {"x":x2,"y":y2}
+                ];
+
+                for (b=0; b < points.length;b++){
+                    var point = points[b];
+                    var value = checkPoint(point,boxB);
+                    if (value==false){
+                        notTouching=false;
+                    }
+                }
+
+                return notTouching;
+            }
+
+            function checkPoint(point,box){
+                var x = point["x"];
+                var y = point["y"];
+                var x1 = box["x1"];
+                var x2 = box["x2"];
+                var y1 = box["y1"];
+                var y2 = box["y2"];
+                if (x<x2&&x>x1){
+                    if (y<y2&&y>y1){
+                        return false;
+                    }
+                }
+                return true;
+            }
+
+            function drawBackground(){
+                context.fillStyle = "skyblue";
+                context.fillRect(0,0,canvas.width,canvas.height);
+            }
+
+            function drawPipes(){
+                for (i=0;i<pipes.length; i++){
+                    context.fillStyle="purple";
+                    context.fillRect(pipes[i]["x"],0,250,canvas.height);
+                    context.fillStyle = "skyblue";
+                    context.fillRect(pipes[i]["x"],pipes[i]["y"],250,400);
+                }  
+            }
+
+            function addPipe(){
+                pipes.push({"x":canvas.width,"y":Math.floor(Math.random()*(canvas.height-400))});
+            }
+
+            function drawPlayers(){
+                var frgo = document.getElementById("frgo");
+                frgo.width=200;
+                frgo.height=150;
+                var turtel = document.getElementById("turtel");
+                if (p1Alive){
+                    context.drawImage(frgo,p1P[0]-(frgo.width/2),p1P[1]-(frgo.height/2),frgo.width,frgo.height);
+                }
+                turtel.width=200;
+                turtel.height=133.25;
+                if (p2Alive){
+                    context.drawImage(turtel,p2P[0]-(turtel.width/2),p2P[1]-(turtel.height/2),turtel.width,turtel.height);
+                }
+            }
+
+            context.fillStyle = "skyblue";
+            context.fillRect(0,0,canvas.width,canvas.height);
+            context.fillStyle = "black";
+            context.font = "128px Comic Sans MS";
+            context.textAlign = "center";
+            context.fillText("Flappy Frgo",canvas.width/2,200);
+            context.font = "64px Comic Sans MS";
+            context.fillText("Press any key to start",canvas.width/2,500);
+        </script>   
+    </body>
+</html>

@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Frgo.org: games and fun games</title>
+        <link rel = "icon" href = "./frgoparty/frgo.jpg">
+        <style>
+          *{
+            box-sizing: border-box;
+          }
+          body{
+            background-image: url('./frgoparty/frgo.jpg');
+            color: lightgreen;
+            font-family: sans-serif;
+            background-size: cover
+          }
+          a{
+            color: blue;
+          }
+          #bottom {
+  			position: absolute;
+  			bottom: 0;
+  			left: 10px;
+		  }
+          .box{
+            width: 33%;
+            padding: 10px;
+          }
+          .center {
+  			display: block;
+  			margin-left: auto;
+  			margin-right: auto;
+            text-align: center;
+		  }
+      .e:active{
+        color:#ff0000;
+      }
+      .g:active{
+        color:#00ff00;
+      }
+      .eg:active{
+        color:#ffff00;
+      }
+      /*.e:hover{
+        color:#ff0000;
+      }
+      .g:hover{
+        color:#00ff00;
+      }
+      .eg:hover{
+        color:#ffff00;
+      } Uncomment this block if you want creator colors based on hover not on click*/
+        </style>
+    </head>
+    <body id="body">
+      <p class = "center" style = "color: black; font-size:250%;">"Hello Visitors," says Frgo</p>
+      <div class = "box" style = "background-color:green; float:left;">
+        <h1>You have reached FRGO.org</h1>
+        <p>Frgo.org is full of fun and games!</p>
+        <h3><br>Try our awesome fun games:</h3>
+        <p>
+          <br>
+          <a href = "./game/" class = "g">Shake, Set, Solve!</a>
+          <br>
+          <a href = "./frgoparty/" class = "e">FrgoParty</a>
+          <br>
+          <a href = "./frgodle/" class = "g">Frgodle</a>
+          <br>
+          <a href = "./jeopardy/" class = "e">Jeopardy!</a>
+          <br>
+          <a href = "./wordSearch/" class = "e">Word search maker</a>
+          <br>
+          <a href = "./frog/" class = "e">Frog (like snake)</a>
+          <br>
+          <a href = "./frgocatcher/" class = "e">Frgo Catcher</a>
+          <br>
+          <a href = "./mathGame/" class = "e">Math Game</a>
+          <br>
+          <a href = "./html-viewer/" class = "e">HTML viewer/editor</a>
+          <br>
+          <a href = "./color-picker/" class = "eg">Color Picker</a>
+          <br>
+          <a href = "./flappy_frgo/" class = "e">Flappy Frgo</a>
+          <br>
+          <a href = "./frgosher/" class = "e">Frgosher for Passover</a>
+          <!--The class attribute "e", "g", and "eg" are to differentiate who made the program. While clicking the link, they will turn different colors-->
+        </p>
+        <p>Site Search: </p>
+        <form action = "javascript:search()">
+        <input type = "text" id = "search" autocomplete = "off"><button>Search</button><br>
+        </form>
+      </div>
+      <div class = "box" style = "background-color:blue; float:right;">
+        <a href = "./frgoparty/frgo.jpg"><img src = "./frgoparty/frgo.jpg" class = "center"></a>
+      </div>
+      <p id = "bottom"><a href = "./policy/">Privacy Policy</a></p>
+      <script>
+        if (window.location.href.substring(0,5) != "https") window.location.href = "https"+window.location.href.substring(4);
+
+        function search(){
+          var query = document.getElementById("search").value;
+          var newUrl = "https://www.google.com/search?q="+encodeURIComponent(query + " site:frgo.org")+"&nfpr=1&filter=0";
+          window.open(newUrl, '_blank');
+        }
+
+      </script>
+
+    </body>
+</html>
